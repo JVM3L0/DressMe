@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user_fastapi
+      POSTGRES_PASSWORD: password_fastapi
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: fastapi_app
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user_fastapi:password_fastapi@db:5432/app_db
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
