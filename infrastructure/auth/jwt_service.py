@@ -4,19 +4,26 @@ from uuid import UUID
 import pendulum
 from jose import JWTError, jwt
 
+from config import settings
+
 
 class JWTService:
-    def __init__(
-        self, secret_key: str, algorithm: str = "HS256", expire_minutes: int = 15
-    ) -> None:
-        self.secret_key = secret_key
-        self.algorithm = algorithm
-        self.expire_minutes = expire_minutes
+    def __init__(self) -> None:
+        self.secret_key = settings.SECRET_KEY
+        self.algorithm = settings.HASHER_ALGORITHM
+        self.expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-    def create_access_token(self, user_id: UUID) -> str:
-        expire_at = pendulum.now("UTC").add(minutes=self.expire_minutes)
-        to_encode = {"sub": str(user_id), "exp": expire_at}
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+    def create_access_token(self, user_uid: UUID) -> dict:
+        expires_at = pendulum.now("UTC").add(minutes=self.expire_minutes)
+        to_encode = {"sub": str(user_uid), "exp": int(expires_at.timestamp())}
+        token = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+
+        return {
+            "access_token": token,
+            "token_type": "Bearer",
+            "expires_in": self.expire_minutes * 60,
+            "expires_at": expires_at,
+        }
 
     def verify_token(self, token: str) -> Optional[UUID]:
         try:

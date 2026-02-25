@@ -1,12 +1,22 @@
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, AwareDatetime
+from pydantic import AwareDatetime, BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
+    username: Annotated[str, Field(description="Nome de usuário.")]
+    email: Annotated[
+        EmailStr, Field(description="E-mail de acesso.", example="user@example.com")
+    ]
+    password: Annotated[str, Field(description="Senha de acesso.", min_length=8)]
+
+
+class UserLoginRequest(BaseModel):
+    email: Annotated[
+        EmailStr, Field(description="E-mail de acesso.", example="user@example.com")
+    ]
+    password: Annotated[str, Field(description="Senha de acesso.", min_length=8)]
 
 
 class UserPublic(BaseModel, from_attributes=True):
