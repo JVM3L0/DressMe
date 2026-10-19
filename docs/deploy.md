@@ -1,6 +1,13 @@
 # Deploy
 
-Checklist para colocar a API em produção. A imagem é gerada pelo `backend/Dockerfile` (contexto de build: `backend/`). Ao iniciar, o container executa `alembic upgrade head` e sobe o uvicorn na porta `PORT` (padrão `8000`).
+Checklist para colocar a aplicação em produção. São duas imagens, as mesmas do `docker-compose.yml`:
+
+| Imagem | Dockerfile | Função |
+| --- | --- | --- |
+| API | `backend/Dockerfile` | Ao iniciar, executa `alembic upgrade head` e sobe o uvicorn na porta `PORT` (padrão `8000`) |
+| Web | `frontend/Dockerfile` | nginx com o site estático: serve `/` e repassa `/api/*` para a API em `http://app:8000` |
+
+O nginx é a entrada pública, e a API não deve ser exposta diretamente. Atrás dele, a API precisa de `UVICORN_ROOT_PATH=/api` (para o `/api/docs`) e de `FORWARDED_ALLOW_IPS` com o endereço do nginx, ou `*` se só o nginx alcança a API, como no compose.
 
 ## Variáveis de ambiente
 
@@ -35,6 +42,8 @@ O limite de cadastros é **por IP do cliente**. Atrás de um proxy ou load balan
 - **Sem configurar:** todos os clientes aparecem com o IP do proxy e **compartilham o mesmo limite** (5 cadastros por minuto para o site inteiro).
 - **IPs ou faixas do proxy** (ex.: `10.0.0.0/8`): a opção mais segura, quando a plataforma documenta essas faixas.
 - **`*`:** aceitável **apenas** se a API não puder ser acessada diretamente, sem passar pelo proxy (caso comum em PaaS). Se ela for acessível diretamente, qualquer cliente pode forjar o `X-Forwarded-For` e burlar o limite.
+
+**Com o nginx na frente (imagem Web):** o nginx substitui o `X-Forwarded-For` pelo IP de quem se conectou a ele (`$remote_addr`), o que impede o cliente de forjar o próprio IP. Se a plataforma tiver **mais um proxy na frente do nginx**, esse IP passa a ser o do proxy da plataforma. Nesse caso, configure o módulo `real_ip` do nginx com as faixas de IP da plataforma (`set_real_ip_from <faixa>;` e `real_ip_header X-Forwarded-For;`) em `frontend/nginx/default.conf`. Sem isso, todos os clientes compartilham o mesmo limite.
 
 Como validar depois do deploy: faça 6 cadastros seguidos de uma mesma máquina. O 6º deve receber `429`. Em seguida, um cadastro de outra rede (ex.: celular no 4G) deve ser aceito.
 

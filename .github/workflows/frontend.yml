@@ -1,0 +1,100 @@
+name: Frontend
+
+on:
+  pull_request:
+    branches: [develop, staging, main]
+    paths:
+      - "frontend/**"
+      # O contrato da API (tipos gerados do OpenAPI) depende do backend
+      - "backend/**"
+      - "docker-compose.yml"
+      - ".github/workflows/frontend.yml"
+  push:
+    branches: [develop, staging, main]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "docker-compose.yml"
+      - ".github/workflows/frontend.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Por workflow, para o do backend não cancelar este
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  quality:
+    name: Lint, tipos e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run check
+      - run: npm run build
+
+  test:
+    name: Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # Testes de componente rodam no Chromium (Vitest browser mode)
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
+  contract:
+    name: Contrato da API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: npm ci
+      - name: Regenera o OpenAPI e os tipos a partir do backend
+        run: npm run api:sync
+      - name: Falha se os arquivos versionados estiverem desatualizados
+        run: git diff --exit-code -- src/lib/api || (echo "::error::Rode 'npm run api:sync' em frontend/ e versione o resultado." && exit 1)
+
+  audit:
+    name: Auditoria de dependências
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+      - run: npm audit --omit=dev --audit-level=moderate
+
+  docker:
+    name: Build da imagem (nginx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker build --tag virtualfit-web:ci .
+      - name: Valida a configuração do nginx
+        run: docker run --rm --add-host app:127.0.0.1 virtualfit-web:ci nginx -t

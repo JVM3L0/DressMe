@@ -1,4 +1,12 @@
+import tomllib
+from pathlib import Path
+
 from dynaconf import Dynaconf, Validator
+
+# Versão da aplicação: fonte única em pyproject.toml (o projeto não é instalado
+# como pacote, então importlib.metadata não a encontra)
+_PYPROJECT = Path(__file__).resolve().parents[1] / "pyproject.toml"
+APP_VERSION: str = tomllib.loads(_PYPROJECT.read_text())["project"]["version"]
 
 
 class Settings(Dynaconf):

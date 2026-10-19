@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from slowapi.errors import RateLimitExceeded
 
+from config import APP_VERSION
 from domain.exceptions.user import UserAlreadyExistsError
 from infrastructure.persistence.database import sessionmanager
 from infrastructure.web.handlers import (
@@ -23,7 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await sessionmanager.close()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title="VirtualFit API", version=APP_VERSION, lifespan=lifespan)
 app.state.limiter = limiter
 
 app.include_router(healthcheck_router)

@@ -27,8 +27,33 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
+      # A API não é publicada no host: só o nginx (rede do compose) a alcança,
+      # então é seguro confiar no X-Forwarded-For que ele define
+      FORWARDED_ALLOW_IPS: "*"
+      # O nginx publica a API em /api: o /docs precisa saber o prefixo
+      UVICORN_ROOT_PATH: /api
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthcheck/', timeout=2)"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build: ./frontend
+    container_name: virtualfit_web
+    depends_on:
+      app:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:8000:8000"
+      # Entrada única da aplicação: frontend em / e API em /api/
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
 
 volumes:
   postgres_data:
