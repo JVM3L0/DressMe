@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from sqlalchemy import func, insert, select
 from sqlalchemy.exc import IntegrityError
@@ -144,3 +146,24 @@ async def test_database_errors_do_not_expose_query_parameters(repository, sessio
 
     assert "hash-secreto" not in str(exc.value)
     assert "parameters hidden" in str(exc.value)
+
+
+async def test_get_by_email_returns_saved_user(repository):
+    saved = await repository.save(make_user())
+
+    found = await repository.get_by_email("JOAO@example.com")
+
+    assert found is not None
+    assert found.uid == saved.uid
+    assert found.hashed_password == "hash"
+
+
+async def test_get_by_email_returns_none_when_missing(repository):
+    assert await repository.get_by_email("ninguem@example.com") is None
+
+
+async def test_get_by_uid_returns_saved_user_or_none(repository):
+    saved = await repository.save(make_user())
+
+    assert (await repository.get_by_uid(saved.uid)).email == "joao@example.com"
+    assert await repository.get_by_uid(uuid.uuid4()) is None

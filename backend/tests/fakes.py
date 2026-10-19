@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from domain.entities.user import User
 
 
@@ -24,6 +26,12 @@ class FakeUserRepository:
             for u in self.users
         )
 
+    async def get_by_email(self, email: str) -> User | None:
+        return next((u for u in self.users if u.email == email.lower()), None)
+
+    async def get_by_uid(self, uid: UUID) -> User | None:
+        return next((u for u in self.users if u.uid == uid), None)
+
 
 class FakePasswordHasher:
     def __init__(self) -> None:
@@ -35,3 +43,17 @@ class FakePasswordHasher:
 
     async def verify(self, password: str, hashed_password: str) -> bool:
         return hashed_password == f"hashed:{password}"
+
+
+class FakeTokenService:
+    """Token legível nos testes: `token:<uid>`"""
+
+    def create_access_token(self, user_id: UUID) -> str:
+        return f"token:{user_id}"
+
+    def verify_token(self, token: str) -> UUID | None:
+        prefix, _, uid = token.partition(":")
+        try:
+            return UUID(uid) if prefix == "token" else None
+        except ValueError:
+            return None

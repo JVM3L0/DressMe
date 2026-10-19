@@ -31,6 +31,15 @@ describe('signupErrorsFromApi', () => {
 		expect(errors).toEqual({ password: MESSAGES.password.too_long });
 	});
 
+	it('traduz os erros da política de senha', () => {
+		expect(
+			signupErrorsFromApi([{ loc: ['body', 'password'], type: 'password_common', msg: '' }])
+		).toEqual({ password: MESSAGES.password.common });
+		expect(
+			signupErrorsFromApi([{ loc: ['body', 'password'], type: 'password_personal', msg: '' }])
+		).toEqual({ password: MESSAGES.password.personal });
+	});
+
 	it('trata campo ausente', () => {
 		expect(signupErrorsFromApi([{ loc: ['body', 'email'], type: 'missing', msg: '' }])).toEqual({
 			email: MESSAGES.email.missing

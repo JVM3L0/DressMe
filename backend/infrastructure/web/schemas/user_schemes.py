@@ -8,10 +8,13 @@ from pydantic import (
     EmailStr,
     Field,
     StringConstraints,
+    ValidationInfo,
     field_validator,
 )
+from pydantic_core import PydanticCustomError
 
 from domain.entities.user import normalize_email, normalize_username
+from domain.password_policy import PasswordProblem, password_problem
 from infrastructure.auth.bcrypt_hasher import BCRYPT_MAX_PASSWORD_BYTES
 
 
@@ -45,7 +48,8 @@ class UserCreate(BaseModel):
         Field(
             min_length=8,
             description=f"Mínimo de 8 caracteres e máximo de "
-            f"{BCRYPT_MAX_PASSWORD_BYTES} bytes.",
+            f"{BCRYPT_MAX_PASSWORD_BYTES} bytes. Senhas comuns e senhas que "
+            "contêm o username ou o e-mail são recusadas.",
         ),
     ]
 
@@ -62,6 +66,25 @@ class UserCreate(BaseModel):
                 f"A senha deve ter no máximo {BCRYPT_MAX_PASSWORD_BYTES} bytes."
             )
         return value
+
+    @field_validator("password")
+    @classmethod
+    def _password_follows_policy(cls, value: str, info: ValidationInfo) -> str:
+        # `info.data` só tem os campos anteriores que passaram na validação
+        problem = password_problem(
+            value,
+            username=info.data.get("username", ""),
+            email=info.data.get("email", ""),
+        )
+        if problem:
+            raise PydanticCustomError(problem.value, _PASSWORD_MESSAGES[problem])
+        return value
+
+
+_PASSWORD_MESSAGES = {
+    PasswordProblem.COMMON: "Essa senha é muito comum. Escolha outra.",
+    PasswordProblem.PERSONAL: "A senha não pode conter o username ou o e-mail.",
+}
 
 
 class UserPublic(BaseModel, from_attributes=True):

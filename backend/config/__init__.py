@@ -15,6 +15,7 @@ class Settings(Dynaconf):
     SECRET_KEY: str
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    AUTH_COOKIE_SECURE: bool
 
 
 settings: Settings = Dynaconf(
@@ -36,11 +37,16 @@ settings: Settings = Dynaconf(
             messages={"condition": "SECRET_KEY deve ter ao menos 32 bytes"},
         ),
         Validator("JWT_ALGORITHM", default="HS256", is_in=["HS256", "HS384", "HS512"]),
-        Validator("ACCESS_TOKEN_EXPIRE_MINUTES", default=15, cast=int, gt=0),
+        # Sessão de uma semana na PoC, sem refresh token (ADR-0006)
+        Validator("ACCESS_TOKEN_EXPIRE_MINUTES", default=7 * 24 * 60, cast=int, gt=0),
+        # Cookie da sessão: só por HTTPS, exceto em desenvolvimento e testes
+        # (settings.toml), para funcionar em http://localhost e na rede local
+        Validator("AUTH_COOKIE_SECURE", default=True, is_type_of=bool),
         # Rate limiting (sintaxe da lib `limits`, ex.: "5/minute")
         Validator("RATE_LIMIT_ENABLED", default=True, is_type_of=bool),
         Validator("RATE_LIMIT_STORAGE_URI", default="memory://"),
         Validator("RATE_LIMIT_SIGNUP", default="5/minute"),
+        Validator("RATE_LIMIT_LOGIN", default="10/minute"),
     ],
 )  # ty:ignore[invalid-assignment]
 

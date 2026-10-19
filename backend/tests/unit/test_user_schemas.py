@@ -97,3 +97,30 @@ def test_user_public_does_not_expose_password():
     public = UserPublic.model_validate(make_user(), from_attributes=True)
 
     assert "hashed_password" not in public.model_dump()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "error_type"),
+    [
+        ({"password": "12345678"}, "password_common"),
+        ({"password": "joao-1234567"}, "password_personal"),
+        (
+            {"email": "mariana@example.com", "password": "mariana-2026"},
+            "password_personal",
+        ),
+    ],
+)
+def test_user_create_applies_password_policy(overrides, error_type):
+    with pytest.raises(ValidationError) as exc:
+        make_user_create(**overrides)
+
+    [error] = exc.value.errors()
+    assert error["loc"] == ("password",)
+    assert error["type"] == error_type
+
+
+def test_user_create_checks_policy_even_when_username_is_invalid():
+    with pytest.raises(ValidationError) as exc:
+        make_user_create(username="x", password="12345678")
+
+    assert {e["type"] for e in exc.value.errors()} >= {"password_common"}

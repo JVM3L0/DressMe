@@ -72,6 +72,9 @@ describe('cadastro', () => {
 		await expect.element(heading).toBeVisible();
 		await expect.element(heading).toHaveFocus();
 		await expect.element(page.getByText(/Tudo pronto, Joao\.Silva/)).toBeVisible();
+		await expect
+			.element(page.getByRole('link', { name: 'Entrar' }))
+			.toHaveAttribute('href', '/entrar');
 
 		const request = fetchMock.mock.calls[0][0] as Request;
 		expect(request.method).toBe('POST');
@@ -135,6 +138,31 @@ describe('cadastro', () => {
 
 		release(new Response(null, { status: 500 }));
 		await expect.element(page.getByRole('button', { name: 'Criar conta' })).toBeEnabled();
+	});
+
+	it('recusa senha com o nome de usuário antes de chamar a API', async () => {
+		await fillValidForm();
+		await page.getByLabelText('Senha', { exact: true }).fill('Joao.Silva-2026');
+		await submit();
+
+		await expect
+			.element(page.getByText('A senha não pode conter o seu nome de usuário ou e-mail.'))
+			.toBeVisible();
+		await expect.element(page.getByLabelText('Senha', { exact: true })).toHaveFocus();
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('mostra quando a API recusa uma senha comum', async () => {
+		respondWith(422, {
+			detail: [{ loc: ['body', 'password'], type: 'password_common', msg: '' }]
+		});
+
+		await fillValidForm();
+		await submit();
+
+		await expect
+			.element(page.getByText('Essa senha é muito comum e fácil de adivinhar. Escolha outra.'))
+			.toBeVisible();
 	});
 
 	it('mostra e oculta a senha', async () => {

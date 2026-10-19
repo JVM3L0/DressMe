@@ -145,6 +145,23 @@ async def test_validation_error_does_not_echo_submitted_values(client):
     assert all("input" not in e for e in errors)
 
 
+@pytest.mark.parametrize(
+    ("password", "error_type"),
+    [("12345678", "password_common"), ("joao-e-maria", "password_personal")],
+)
+async def test_create_user_rejects_weak_password_with_typed_error(
+    client, repository, password, error_type
+):
+    response = await client.post("/users/", json=PAYLOAD | {"password": password})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    [error] = response.json()["detail"]
+    assert error["loc"] == ["body", "password"]
+    assert error["type"] == error_type
+    assert password not in response.text
+    assert repository.users == []
+
+
 async def test_validation_error_for_password_too_long_keeps_message(client):
     response = await client.post("/users/", json=PAYLOAD | {"password": "é" * 37})
 

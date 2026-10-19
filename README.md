@@ -86,13 +86,16 @@ Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pel
 | `TEST_DATABASE_URL` | Não    | `<DATABASE_URL>_test` | Banco dos testes de integração                 |
 | `SECRET_KEY`   | Sim         | —             | Chave dos tokens JWT (mínimo 32 bytes; 48 para HS384, 64 para HS512) |
 | `JWT_ALGORITHM` | Não        | `HS256`       | `HS256`, `HS384` ou `HS512`                            |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Não | `15`   | Validade do token de acesso                            |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Não | `10080` | Validade da sessão (uma semana)                       |
+| `AUTH_COOKIE_SECURE` | Não   | `true`        | Cookie da sessão só por HTTPS (`false` em `development` e `testing`) |
 | `RATE_LIMIT_ENABLED` | Não   | `true`        | Liga o limite de requisições                           |
 | `RATE_LIMIT_SIGNUP` | Não    | `5/minute`    | Limite de cadastros por IP                             |
+| `RATE_LIMIT_LOGIN` | Não     | `10/minute`   | Limite de tentativas de login por IP                   |
 | `RATE_LIMIT_STORAGE_URI` | Não | `memory://` | Armazenamento dos contadores (`redis://...` com várias instâncias) |
 | `FORWARDED_ALLOW_IPS` | Deploy | `127.0.0.1` | IPs de proxy confiáveis para o uvicorn (IP real do cliente) |
 | `TEST_REDIS_URL` | Não | — | Redis para o teste de rate limiting compartilhado (pulado sem ele) |
 | `WEB_PORT` | Não | `8080` | Porta local do nginx no `docker compose` |
+| `WEB_HOST` | Não | `127.0.0.1` | Interface do nginx no compose (`0.0.0.0` para acessar pela rede local) |
 
 A configuração usa o [Dynaconf](https://www.dynaconf.com/): valores por ambiente ficam em `settings.toml` e são sobrescritos pelo `.env` e pelas variáveis de ambiente. `DATABASE_URL` é validada na importação da aplicação: sem ela, a API e o Alembic não sobem.
 
@@ -133,6 +136,20 @@ Abra <http://localhost:8080> (para mudar a porta, use `WEB_PORT`). A documentaç
 | `db` | `postgres:16-alpine` | Banco, publicado em `127.0.0.1:5432` para o desenvolvimento local |
 
 A ordem de subida respeita os healthchecks: `db` → `app` → `web`. O nginx também define os cabeçalhos de segurança, o cache dos arquivos estáticos e o IP real do cliente para o rate limiting. A configuração fica em `frontend/nginx/`.
+
+#### Testando no celular
+
+1. No `.env`, defina `WEB_HOST=0.0.0.0` e rode `docker compose up -d web`.
+2. No WSL2 com rede NAT (o padrão), repasse a porta do Windows para o WSL. No PowerShell, como administrador:
+   ```powershell
+   $wsl = (wsl hostname -I).Split(' ')[0]
+   netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=8080 connectaddress=$wsl connectport=8080
+   New-NetFirewallRule -DisplayName "VirtualFit 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
+   ```
+   O IP do WSL muda quando o Windows reinicia: refaça o `portproxy` (ou use `networkingMode=mirrored` no `.wslconfig`).
+3. No celular, na mesma rede, abra `http://<IP do computador>:8080` (no Windows: `ipconfig`).
+
+O login funciona por HTTP só porque o compose roda em `MODE=development` (`AUTH_COOKIE_SECURE=false`). Não exponha esse modo fora da rede local.
 
 Use esse modo para validar o sistema completo antes de abrir um PR. Para desenvolver, os servidores locais com recarga automática (acima) são mais rápidos. Se for alternar, rode `docker compose stop app web` antes de iniciar a API local, para liberar o banco só para ela.
 
@@ -201,12 +218,15 @@ O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pr
 | ------ | --------------- | ------------------------ |
 | GET    | `/healthcheck/` | Verifica se a API está no ar |
 | POST   | `/users/`       | Cria um novo usuário (`201`; `409` se e-mail ou username já existir; `422` se os dados forem inválidos) |
+| POST   | `/auth/login`   | Inicia a sessão com e-mail e senha (`200` com o cookie `virtualfit_session`; `401` se as credenciais estiverem erradas) |
+| POST   | `/auth/logout`  | Encerra a sessão neste navegador (`204`) |
+| GET    | `/users/me`     | Usuário da sessão atual (`401` sem sessão) |
 
 Regras do cadastro:
 
 - **username:** 3 a 255 caracteres; letras, números, `_`, `.` ou `-`. A grafia é preservada.
 - **email:** e-mail válido.
-- **password:** mínimo de 8 caracteres e máximo de 72 bytes (limite do bcrypt).
+- **password:** mínimo de 8 caracteres e máximo de 72 bytes (limite do bcrypt). Senhas comuns (lista de vazamentos do NCSC) e senhas que contêm o username ou o e-mail são recusadas, sem regras de composição (NIST SP 800-63B).
 
 E-mail e username não diferenciam maiúsculas na verificação de duplicados. O e-mail é salvo em minúsculas (constraint `CHECK`); o username mantém a grafia original e é único por `lower(username)` (índice único).
 
@@ -216,6 +236,15 @@ Exemplo de criação de usuário:
 curl -X POST http://localhost:8000/users/ \
   -H "Content-Type: application/json" \
   -d '{"username": "joao", "email": "joao@example.com", "password": "senha-segura"}'
+```
+
+A sessão dura uma semana e fica num cookie `HttpOnly` (o JavaScript da página não lê o token). Login e consulta do usuário com `curl`:
+
+```bash
+curl -c cookies.txt -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "joao@example.com", "password": "senha-segura"}'
+curl -b cookies.txt http://localhost:8000/users/me
 ```
 
 ## Arquitetura

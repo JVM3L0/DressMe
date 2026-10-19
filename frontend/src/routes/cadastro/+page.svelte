@@ -2,7 +2,9 @@
 	import { resolve } from '$app/paths';
 	import { tick } from 'svelte';
 
-	import HangTag from '#lib/components/HangTag.svelte';
+	import FormAlert from '#lib/components/FormAlert.svelte';
+	import FormPage from '#lib/components/FormPage.svelte';
+	import PasswordField from '#lib/components/PasswordField.svelte';
 	import TextField from '#lib/components/TextField.svelte';
 	import { submitSignup, type CreatedUser } from '#lib/signup/submit.ts';
 	import {
@@ -30,7 +32,6 @@
 	let touched: Partial<Record<SignupField, boolean>> = $state({});
 	let formError = $state('');
 	let submitting = $state(false);
-	let showPassword = $state(false);
 	let created: CreatedUser | undefined = $state();
 
 	const inputs: Partial<Record<SignupField, HTMLInputElement>> = $state({});
@@ -40,12 +41,12 @@
 	/** Valida ao sair do campo, e não a cada tecla, para não interromper quem digita */
 	function handleBlur(field: SignupField) {
 		touched[field] = true;
-		errors[field] = validateField(field, values[field]);
+		errors[field] = validateField(field, values[field], values);
 	}
 
 	/** Depois do primeiro erro, a mensagem some assim que o campo fica válido */
 	function handleInput(field: SignupField) {
-		if (touched[field]) errors[field] = validateField(field, values[field]);
+		if (touched[field]) errors[field] = validateField(field, values[field], values);
 	}
 
 	async function focusFirstError() {
@@ -87,164 +88,69 @@
 	<title>Criar conta | VirtualFit</title>
 </svelte:head>
 
-<div class="layout">
-	<div class="intro">
-		<h1>Criar conta</h1>
-		<p>Guarde suas fotos e o seu guarda-roupa num lugar só.</p>
-	</div>
+<FormPage title="Criar conta" lead="Guarde suas fotos e o seu guarda-roupa num lugar só.">
+	{#if created}
+		<div class="panel" role="status">
+			<h2 tabindex="-1" bind:this={successHeading}>Conta criada</h2>
+			<p>Tudo pronto, {created.username}. Entre com o seu e-mail e a senha que acabou de criar.</p>
+			<a class="button" href={resolve('/entrar')}>Entrar</a>
+		</div>
+	{:else}
+		<form novalidate onsubmit={handleSubmit}>
+			<TextField
+				label="Nome de usuário"
+				name="username"
+				autocomplete="username"
+				autocapitalize="none"
+				spellcheck="false"
+				required
+				minlength={USERNAME_MIN}
+				maxlength={USERNAME_MAX}
+				hint="Letras sem acento, números, ponto, hífen ou sublinhado."
+				error={errors.username}
+				bind:value={values.username}
+				bind:input={inputs.username}
+				onblur={() => handleBlur('username')}
+				oninput={() => handleInput('username')}
+			/>
 
-	<div class="tag-slot">
-		<HangTag>
-			{#if created}
-				<div class="success" role="status">
-					<h2 tabindex="-1" bind:this={successHeading}>Conta criada</h2>
-					<p>Tudo pronto, {created.username}. O login chega na próxima versão.</p>
-					<a href={resolve('/')}>Voltar ao início</a>
-				</div>
-			{:else}
-				<form novalidate onsubmit={handleSubmit}>
-					<TextField
-						label="Nome de usuário"
-						name="username"
-						autocomplete="username"
-						autocapitalize="none"
-						spellcheck="false"
-						required
-						minlength={USERNAME_MIN}
-						maxlength={USERNAME_MAX}
-						hint="Letras sem acento, números, ponto, hífen ou sublinhado."
-						error={errors.username}
-						bind:value={values.username}
-						bind:input={inputs.username}
-						onblur={() => handleBlur('username')}
-						oninput={() => handleInput('username')}
-					/>
+			<TextField
+				label="E-mail"
+				name="email"
+				type="email"
+				autocomplete="email"
+				inputmode="email"
+				autocapitalize="none"
+				spellcheck="false"
+				required
+				error={errors.email}
+				bind:value={values.email}
+				bind:input={inputs.email}
+				onblur={() => handleBlur('email')}
+				oninput={() => handleInput('email')}
+			/>
 
-					<TextField
-						label="E-mail"
-						name="email"
-						type="email"
-						autocomplete="email"
-						inputmode="email"
-						autocapitalize="none"
-						spellcheck="false"
-						required
-						error={errors.email}
-						bind:value={values.email}
-						bind:input={inputs.email}
-						onblur={() => handleBlur('email')}
-						oninput={() => handleInput('email')}
-					/>
+			<PasswordField
+				label="Senha"
+				name="password"
+				autocomplete="new-password"
+				required
+				minlength={PASSWORD_MIN}
+				hint={`Pelo menos ${PASSWORD_MIN} caracteres. Senhas comuns e com o seu nome não valem.`}
+				error={errors.password}
+				bind:value={values.password}
+				bind:input={inputs.password}
+				onblur={() => handleBlur('password')}
+				oninput={() => handleInput('password')}
+			/>
 
-					<TextField
-						label="Senha"
-						name="password"
-						type={showPassword ? 'text' : 'password'}
-						autocomplete="new-password"
-						required
-						minlength={PASSWORD_MIN}
-						hint={`Pelo menos ${PASSWORD_MIN} caracteres.`}
-						error={errors.password}
-						bind:value={values.password}
-						bind:input={inputs.password}
-						onblur={() => handleBlur('password')}
-						oninput={() => handleInput('password')}
-					>
-						{#snippet trailing()}
-							<button
-								type="button"
-								class="toggle"
-								aria-pressed={showPassword}
-								onclick={() => (showPassword = !showPassword)}
-							>
-								{showPassword ? 'Ocultar' : 'Mostrar'}
-								<span class="visually-hidden">senha</span>
-							</button>
-						{/snippet}
-					</TextField>
+			<FormAlert message={formError} bind:element={formErrorElement} />
 
-					<p class="form-error" role="alert" tabindex="-1" bind:this={formErrorElement}>
-						{formError}
-					</p>
+			<button class="button" type="submit" disabled={submitting} aria-busy={submitting}>
+				{submitting ? 'Criando conta…' : 'Criar conta'}
+			</button>
 
-					<button class="button" type="submit" disabled={submitting} aria-busy={submitting}>
-						{submitting ? 'Criando conta…' : 'Criar conta'}
-					</button>
-				</form>
-			{/if}
-		</HangTag>
-	</div>
-</div>
-
-<style>
-	.layout {
-		display: grid;
-		gap: var(--space-8);
-		justify-items: center;
-	}
-
-	.intro {
-		display: grid;
-		gap: var(--space-2);
-		width: min(100%, 26rem);
-	}
-
-	h1 {
-		font-size: var(--text-2xl);
-	}
-
-	.intro p {
-		color: var(--color-text-muted);
-	}
-
-	.tag-slot {
-		width: min(100%, 26rem);
-		--button-bg: var(--tag-button-bg);
-		--button-text: var(--tag-button-text);
-	}
-
-	form,
-	.success {
-		display: grid;
-		gap: var(--space-6);
-	}
-
-	.success h2 {
-		font-size: var(--text-2xl);
-	}
-
-	.form-error {
-		font-weight: 600;
-		color: var(--tag-danger);
-	}
-
-	/* Vazia, a região continua na árvore de acessibilidade (para anunciar o
-	   erro quando ele aparecer), mas fora do fluxo do layout */
-	.form-error:empty {
-		position: absolute;
-	}
-
-	.toggle {
-		min-height: 2.75rem;
-		padding-inline: var(--space-3);
-		border: 1px solid var(--tag-text);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--tag-text);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	@media (min-width: 48rem) {
-		.layout {
-			grid-template-columns: 1fr 26rem;
-			align-items: start;
-			justify-items: start;
-		}
-
-		.intro {
-			padding-top: var(--space-12);
-		}
-	}
-</style>
+			<p class="switch">Já tem conta? <a href={resolve('/entrar')}>Entrar</a></p>
+		</form>
+	{/if}
+</FormPage>

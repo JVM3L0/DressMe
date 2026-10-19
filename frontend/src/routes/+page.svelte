@@ -35,6 +35,7 @@
 			<p class="tag-title">Seu provador</p>
 			<p class="tag-text">Crie uma conta para guardar suas fotos e montar seus looks.</p>
 			<a class="button" href={resolve('/cadastro')}>Criar conta</a>
+			<p class="tag-text">Já tem conta? <a href={resolve('/entrar')}>Entrar</a></p>
 		</HangTag>
 	</div>
 </section>

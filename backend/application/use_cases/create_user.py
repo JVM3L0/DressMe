@@ -13,12 +13,14 @@ class CreateUserUseCase:
         username = normalize_username(username)
         email = normalize_email(email)
 
+        # O hash vem antes da checagem de propósito: assim o cadastro duplicado
+        # leva o mesmo tempo que o novo, e o tempo não revela quem tem conta
+        hashed_password = await self.password_hasher.hash(raw_password)
+
         if await self.repository.exists_by_email_or_username(
             email=email, username=username
         ):
             raise UserAlreadyExistsError()
-
-        hashed_password = await self.password_hasher.hash(raw_password)
 
         new_user = User(username=username, email=email, hashed_password=hashed_password)
 

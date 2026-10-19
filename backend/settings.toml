@@ -5,6 +5,9 @@
 ECHO_SQL = false
 
 [development]
+# Sem HTTPS local: o navegador recusaria um cookie `Secure` vindo de
+# http://<ip-da-rede>:8080 (no celular, por exemplo)
+AUTH_COOKIE_SECURE = false
 
 [testing]
 # Valor válido para importar a aplicação nos testes unitários; o engine só
@@ -14,5 +17,7 @@ DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/unused"
 SECRET_KEY = "chave-apenas-para-testes-nao-use-em-producao"
 # Ligado apenas nos testes específicos de rate limiting
 RATE_LIMIT_ENABLED = false
+# O cliente HTTP dos testes usa http://test
+AUTH_COOKIE_SECURE = false
 
 [production]

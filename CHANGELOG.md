@@ -2,6 +2,36 @@
 
 As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (veja o [ADR-0005](docs/adr/0005-versionamento-semantico-por-branch.md)).
 
+## [0.3.0] - 2026-10-19
+
+### Adicionado
+
+- Login com sessão de uma semana ([ADR-0006](docs/adr/0006-sessao-em-cookie-e-protecao-de-contas.md)):
+  - `POST /auth/login`, `POST /auth/logout` e `GET /users/me`;
+  - o token fica num cookie `HttpOnly` e `SameSite=Strict` (e `Secure` em produção), que o JavaScript da página não lê;
+  - limite de 10 tentativas de login por minuto por IP (`RATE_LIMIT_LOGIN`).
+- Telas de login (`/entrar`) e da conta (`/conta`), com saída da conta. O cabeçalho mostra "Entrar" ou "Sua conta", conforme a sessão.
+- Política de senha (DT-07), como no NIST SP 800-63B:
+  - recusa as senhas mais usadas em vazamentos (lista do NCSC) e senhas que contêm o username ou o e-mail;
+  - sem regras de composição;
+  - o frontend antecipa a regra de dados pessoais e traduz os erros da API.
+- Content Security Policy nas páginas (DT-09): só recursos da própria origem e nenhum script inline sem hash. O script de tema virou um arquivo (`static/theme-init.js`).
+- Variável `WEB_HOST` no compose e instruções para testar no celular pela rede local.
+
+### Alterado
+
+- A sessão passa de 15 minutos para uma semana (`ACCESS_TOKEN_EXPIRE_MINUTES=10080`).
+- Nos formulários, a dica e o erro de cada campo ocupam o mesmo espaço. Antes, o erro que aparecia ao sair do campo mudava a altura do formulário, e o clique no botão de enviar podia se perder.
+
+### Segurança
+
+- O login não revela se um e-mail tem conta: a resposta e o tempo são iguais para e-mail inexistente e senha errada (DT-06).
+- O cadastro calcula o hash da senha antes de checar duplicidade, então o tempo de resposta também não revela contas (DT-06). O `409` continua, com risco aceito no ADR-0006.
+
+### Removido
+
+- Capturas de tela de testes que falharam, commitadas por engano, agora ignoradas pelo Git.
+
 ## [0.2.0] - 2026-10-19
 
 ### Adicionado
@@ -40,5 +70,6 @@ Primeira versão da API, consolidando o trabalho até a reorganização em monor
 - Valores das queries ocultos nos logs, e erros 422 sem ecoar a entrada (para não expor senhas).
 - Postgres e API acessíveis apenas por `127.0.0.1` no compose, e credenciais no `.env`.
 
+[0.3.0]: https://github.com/JVM3L0/DressMe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JVM3L0/DressMe/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/JVM3L0/DressMe/releases/tag/v0.1.0

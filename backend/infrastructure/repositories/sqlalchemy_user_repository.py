@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +32,7 @@ class SQLAlchemyUserRepository:
             raise UserAlreadyExistsError() from exc
         await self.session.refresh(model)
 
-        return User.model_validate(model, from_attributes=True)
+        return _to_entity(model)
 
     async def exists_by_email_or_username(self, email: str, username: str) -> bool:
         stmt = select(
@@ -43,3 +45,18 @@ class SQLAlchemyUserRepository:
         )
 
         return bool(await self.session.scalar(stmt))
+
+    async def get_by_email(self, email: str) -> User | None:
+        # E-mails são salvos em minúsculas (CHECK ck_users_email_lowercase)
+        model = await self.session.scalar(
+            select(UserOrm).where(UserOrm.email == email.lower())
+        )
+        return _to_entity(model) if model else None
+
+    async def get_by_uid(self, uid: UUID) -> User | None:
+        model = await self.session.get(UserOrm, uid)
+        return _to_entity(model) if model else None
+
+
+def _to_entity(model: UserOrm) -> User:
+    return User.model_validate(model, from_attributes=True)

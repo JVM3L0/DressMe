@@ -52,8 +52,9 @@ services:
       app:
         condition: service_healthy
     ports:
-      # Entrada única da aplicação: frontend em / e API em /api/
-      - "127.0.0.1:${WEB_PORT:-8080}:80"
+      # Entrada única da aplicação: frontend em / e API em /api/. Só nesta
+      # máquina por padrão; WEB_HOST=0.0.0.0 abre para a rede local (celular)
+      - "${WEB_HOST:-127.0.0.1}:${WEB_PORT:-8080}:80"
 
 volumes:
   postgres_data:

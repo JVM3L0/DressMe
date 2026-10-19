@@ -17,11 +17,17 @@ npm run api:sync     # regenera src/lib/api/openapi.json e schema.ts a partir do
 ```
 src/
 ├── app.css                # tokens de design (paleta Gruvbox, tipografia, espaços)
+├── csp.spec.ts            # confere a CSP de csp.config.ts
 ├── lib/
 │   ├── api/               # cliente tipado, schema gerado e tradução de erros da API
-│   ├── components/        # componentes reutilizáveis (TextField, HangTag, ApiStatus)
-│   └── signup/            # regras de validação e envio do cadastro
-└── routes/                # páginas (/ e /cadastro)
+│   ├── components/        # componentes reutilizáveis (TextField, PasswordField, HangTag, FormPage…)
+│   ├── login/             # validação e envio do login
+│   ├── signup/            # regras de validação e envio do cadastro
+│   ├── session.svelte.ts  # sessão do usuário, compartilhada pelas páginas
+│   └── theme.ts           # tema claro/escuro
+└── routes/                # páginas (/, /cadastro, /entrar e /conta)
+static/theme-init.js       # aplica o tema salvo antes da primeira pintura
+csp.config.ts              # Content Security Policy das páginas
 ```
 
 ## Convenções
@@ -33,6 +39,8 @@ src/
   - todo campo tem rótulo, e os erros ficam ligados ao campo por `aria-describedby`;
   - ao enviar com erro, o foco vai para o primeiro campo inválido;
   - os contrastes da paleta são verificados.
+- **Sessão:** o token fica num cookie `HttpOnly`, que o JavaScript não lê. A página pergunta à API quem está logado (`GET /users/me`), e o resultado fica em `session.current`.
+- **CSP:** nada de `<script>` inline ou atributo `style` no HTML. Scripts e estilos vêm de arquivos, e a política está em `csp.config.ts`.
 - **Arquivos gerados** (`src/lib/api/openapi.json` e `schema.ts`) não são editados à mão.
 - **`overrides` do `openapi-typescript`:** o `package.json` força o uso do TypeScript do projeto, porque a versão 7 do gerador declara suporte só ao TypeScript 5. O gerador funciona com o 6, e o CI verifica o resultado.
 
