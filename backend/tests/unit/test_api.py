@@ -1,10 +1,14 @@
+import re
+import tomllib
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
 from application.use_cases.create_user import CreateUserUseCase
+from config import APP_VERSION
 from infrastructure.web.dependencies import get_create_user_use_case
 from main import app
 from tests.fakes import FakePasswordHasher, FakeUserRepository
@@ -39,7 +43,20 @@ async def test_healthcheck(client):
     response = await client.get("/healthcheck/")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"status": "healthy"}
+    assert response.json() == {"status": "healthy", "version": APP_VERSION}
+
+
+def test_openapi_exposes_app_version():
+    schema = app.openapi()
+
+    assert schema["info"] == {"title": "VirtualFit API", "version": APP_VERSION}
+
+
+def test_app_version_comes_from_pyproject():
+    pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
+
+    assert tomllib.loads(pyproject.read_text())["project"]["version"] == APP_VERSION
+    assert re.fullmatch(r"\d+\.\d+\.\d+", APP_VERSION)
 
 
 async def test_create_user_returns_201_with_public_fields(client, repository):
