@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 import pendulum
@@ -18,7 +17,7 @@ class JWTService:
         to_encode = {"sub": str(user_id), "exp": expire_at}
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
 
-    def verify_token(self, token: str) -> Optional[UUID]:
+    def verify_token(self, token: str) -> UUID | None:
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             user_id = payload.get("sub")

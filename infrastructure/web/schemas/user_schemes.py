@@ -16,8 +16,8 @@ from infrastructure.auth.bcrypt_hasher import BCRYPT_MAX_PASSWORD_BYTES
 
 
 def _normalize_username_input(value: Any) -> Any:
-    # Normaliza antes das restrições; valores que não são texto seguem para
-    # a validação de tipo do Pydantic (422)
+    # Remove espaços antes das restrições; valores que não são texto seguem
+    # para a validação de tipo do Pydantic (422)
     return normalize_username(value) if isinstance(value, str) else value
 
 
@@ -27,11 +27,12 @@ Username = Annotated[
     StringConstraints(
         min_length=3,
         max_length=255,
-        pattern=r"^[a-z0-9_.-]+$",
+        pattern=r"^[A-Za-z0-9_.-]+$",
     ),
     Field(
-        description="Letras, números, `_`, `.` ou `-`. Não diferencia maiúsculas.",
-        examples=["joao.silva"],
+        description="Letras, números, `_`, `.` ou `-`. A grafia é preservada, mas "
+        "a unicidade não diferencia maiúsculas.",
+        examples=["Joao.Silva"],
     ),
 ]
 

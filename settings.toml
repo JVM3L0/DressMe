@@ -1,0 +1,15 @@
+# Valores por ambiente (selecionado pela variável MODE). Variáveis de ambiente
+# e o `.env` têm prioridade sobre este arquivo. Não coloque segredos aqui.
+
+[default]
+ECHO_SQL = false
+
+[development]
+
+[testing]
+# Valor válido para importar a aplicação nos testes unitários; o engine só
+# conecta quando é usado. Os testes de integração usam DATABASE_URL do `.env`
+# (ou do ambiente) com o banco `<nome>_test`, ou TEST_DATABASE_URL.
+DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/unused"
+
+[production]

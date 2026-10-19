@@ -8,7 +8,11 @@ from sqlalchemy import make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from tests.integration.database import TEST_DATABASE_URL, create_database_if_missing
+from tests.integration.database import (
+    TEST_DATABASE_URL,
+    create_database_if_missing,
+    database_unavailable,
+)
 
 pytestmark = [pytest.mark.anyio, pytest.mark.integration]
 
@@ -29,7 +33,7 @@ async def engine():
     try:
         await create_database_if_missing(MIGRATIONS_URL)
     except (OSError, SQLAlchemyError) as exc:
-        pytest.skip(f"Postgres de teste indisponível: {exc}")
+        database_unavailable(exc)
 
     engine = create_async_engine(MIGRATIONS_URL)
     await alembic("downgrade", "base")
@@ -60,6 +64,23 @@ async def test_lowercase_migration_normalizes_existing_rows(engine):
     async with engine.connect() as conn:
         row = (await conn.execute(text("SELECT username, email FROM users"))).one()
     assert tuple(row) == ("joao", "joao@example.com")
+
+
+async def test_head_preserves_username_case_and_downgrade_lowercases_it(engine):
+    await alembic("upgrade", "head")
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO users (uid, username, email, hashed_password) "
+                "VALUES (gen_random_uuid(), 'Joao', 'joao@example.com', 'hash')"
+            )
+        )
+
+    await alembic("downgrade", "afa8286abd67")
+
+    async with engine.connect() as conn:
+        username = await conn.scalar(text("SELECT username FROM users"))
+    assert username == "joao"
 
 
 async def test_lowercase_migration_fails_on_case_insensitive_duplicates(engine):

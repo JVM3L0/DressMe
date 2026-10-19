@@ -11,7 +11,7 @@ dependencies = [
     "bcrypt>=5.0.0",
     "dynaconf>=3.2.12",
     "email-validator>=2.3.0",
-    "fastapi[standard]>=0.129.0",
+    "fastapi[standard-no-fastapi-cloud-cli]>=0.149.0",
     "pendulum>=3.2.0",
     "python-jose[cryptography]>=3.5.0",
     "sqlalchemy[asyncio]>=2.0.46",
@@ -19,12 +19,53 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+    "ruff>=0.17.1",
+]
 test = [
     "pytest>=9.0.2",
 ]
+
+[tool.uv]
+# `uv sync` / `uv run` instalam ferramentas de desenvolvimento e testes
+default-groups = ["dev", "test"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = ["--strict-markers"]
 markers = ["integration: requer Postgres (TEST_DATABASE_URL)"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle (erros)
+    "W",   # pycodestyle (avisos)
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# Padrão do FastAPI para injeção de dependências em parâmetros
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body"]
+
+[tool.ruff.lint.per-file-ignores]
+# Template do Alembic importa `op` e `sa` mesmo em migrações ainda vazias
+"infrastructure/persistence/alembic/versions/*" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "application",
+    "config",
+    "domain",
+    "infrastructure",
+    "main",
+    "tests",
+]

@@ -60,7 +60,7 @@ async def test_create_user_normalizes_input(client):
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["username"] == "joao"
+    assert response.json()["username"] == "JoaO"
     assert response.json()["email"] == "joao@example.com"
 
 

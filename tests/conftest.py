@@ -2,11 +2,8 @@ import os
 
 import pytest
 
-# `config` exige DATABASE_URL na importação. Para os testes unitários basta um
-# valor válido: o engine do SQLAlchemy só conecta quando é usado.
-os.environ.setdefault(
-    "DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/unused"
-)
+# Seleciona o ambiente [testing] do settings.toml antes de importar `config`
+os.environ.setdefault("MODE", "testing")
 
 
 @pytest.fixture(scope="session")

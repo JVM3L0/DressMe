@@ -11,14 +11,14 @@ def test_normalize_email_lowercases_and_strips():
     assert normalize_email("  Joao@Example.COM ") == "joao@example.com"
 
 
-def test_normalize_username_lowercases_and_strips():
-    assert normalize_username("  Joao.Silva ") == "joao.silva"
+def test_normalize_username_strips_and_preserves_case():
+    assert normalize_username("  Joao.Silva ") == "Joao.Silva"
 
 
-def test_user_normalizes_email_and_username():
-    user = make_user(username="JoaO", email="JOAO@Example.com")
+def test_user_lowercases_email_and_preserves_username_case():
+    user = make_user(username=" JoaO ", email="JOAO@Example.com")
 
-    assert user.username == "joao"
+    assert user.username == "JoaO"
     assert user.email == "joao@example.com"
 
 

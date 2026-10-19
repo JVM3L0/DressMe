@@ -1,7 +1,8 @@
+import uuid
+
+import pendulum
 from sqlalchemy import UUID, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
-import uuid
-import pendulum
 
 
 class SQLUUIDMixin:
@@ -20,10 +21,9 @@ class SQLLifeCycleMixin:
         server_default=func.now(),
         index=True,
     )
-    updated_at: Mapped[pendulum.DateTime] = mapped_column(
+    updated_at: Mapped[pendulum.DateTime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         onupdate=pendulum.now,
-        server_default=func.now(),
         index=True,
     )

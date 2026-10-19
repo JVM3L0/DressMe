@@ -9,8 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from config import settings
-from infrastructure.persistence.models.base import Base
-from infrastructure.persistence.models.user_model import UserOrm
+from infrastructure.persistence.models import Base
 
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), "..")))
 # this is the Alembic Config object, which provides

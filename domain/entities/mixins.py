@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 import pendulum
 from pydantic import AwareDatetime, Field
@@ -11,4 +10,4 @@ class UUIDMixin:
 
 class LifeCycleMixin:
     created_at: AwareDatetime = Field(default_factory=lambda: pendulum.now("UTC"))
-    updated_at: Optional[AwareDatetime] = None
+    updated_at: AwareDatetime | None = None

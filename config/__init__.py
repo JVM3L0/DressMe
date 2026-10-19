@@ -1,4 +1,3 @@
-from markdown_it.presets import default
 from dynaconf import Dynaconf, Validator
 
 
@@ -16,7 +15,7 @@ settings: Settings = Dynaconf(
     validators=[
         Validator("MODE", default="development"),
         Validator("DATABASE_URL", required=True),
-        Validator("ECHO_SQL", default=True),
+        Validator("ECHO_SQL", default=False),
     ],
 )  # ty:ignore[invalid-assignment]
 

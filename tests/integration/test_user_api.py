@@ -47,7 +47,7 @@ async def test_create_user_persists_normalized_user_with_hashed_password(
 
     row = (await session.scalars(select(UserOrm))).one()
     assert str(row.uid) == body["uid"]
-    assert row.username == body["username"] == "joao"
+    assert row.username == body["username"] == "Joao"
     assert row.email == body["email"] == "joao@example.com"
     assert row.hashed_password.startswith("$2b$")
     assert await BcryptHasher().verify("senha-segura", row.hashed_password)
