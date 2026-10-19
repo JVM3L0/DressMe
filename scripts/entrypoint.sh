@@ -2,8 +2,6 @@
 
 set -e
 
-echo "Aguardando o banco de dados..."
-
 echo "Rodando migrações..."
 alembic upgrade head
 
