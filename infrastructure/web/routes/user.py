@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from application.use_cases.create_user import CreateUserUseCase
@@ -12,7 +12,12 @@ from infrastructure.web.schemas.user_schemes import UserCreate, UserPublic
 router = APIRouter(prefix="/users")
 
 
-@router.post("/", response_model=UserPublic)
+@router.post(
+    "/",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    responses={409: {"description": "E-mail ou username já registrado."}},
+)
 async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db_session)):
     use_case = CreateUserUseCase(
         repository=SQLAlchemyUserRepository(db), password_hasher=BcryptHasher()
