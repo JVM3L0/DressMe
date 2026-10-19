@@ -42,6 +42,7 @@ API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo u
    git clone git@github.com:JVM3L0/DressMe.git
    cd DressMe
    uv sync --all-groups
+   uv run pre-commit install   # roda o Ruff antes de cada commit
    ```
 
 2. Crie um arquivo `.env` na raiz do projeto (já ignorado pelo Git):
@@ -56,7 +57,7 @@ API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo u
 | -------------- | ----------- | ------------- | ------------------------------------------------------ |
 | `DATABASE_URL` | Sim         | —             | URL de conexão async (`postgresql+asyncpg://...`)      |
 | `MODE`         | Não         | `development` | Ambiente ativo do Dynaconf                             |
-| `ECHO_SQL`     | Não         | `True`        | Exibe no log as queries SQL executadas                 |
+| `ECHO_SQL`     | Não         | `False`       | Exibe no log as queries SQL executadas                 |
 
 > `DATABASE_URL` é validada na importação da aplicação: sem ela, a API, o Alembic e os testes não sobem.
 
@@ -80,7 +81,7 @@ A API fica disponível em <http://localhost:8000> e a documentação interativa 
 docker compose up --build
 ```
 
-O container da aplicação executa `alembic upgrade head` automaticamente antes de iniciar o servidor na porta `8000`.
+O container da aplicação aguarda o Postgres ficar saudável (healthcheck), executa `alembic upgrade head` e inicia o servidor na porta `8000`.
 
 ## Migrações
 
@@ -118,7 +119,7 @@ uv run ruff check --fix .    # aplica correções automáticas
 uv run ruff format .         # formata o código
 ```
 
-Migrações geradas pelo Alembic são formatadas automaticamente pelo Ruff (`post_write_hooks` em `alembic.ini`).
+O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pre-commit run --all-files` para rodar manualmente). Migrações geradas pelo Alembic também são formatadas pelo Ruff (`post_write_hooks` em `alembic.ini`).
 
 ## Endpoints
 

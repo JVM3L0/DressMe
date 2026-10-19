@@ -12,7 +12,7 @@ DressMe is an async FastAPI backend (Python 3.13, managed with `uv`) backed by P
 uv sync --all-groups                 # install deps (incl. pytest and ruff)
 docker compose up -d db              # start Postgres only (localhost:5432)
 uv run fastapi dev main.py           # run the API locally with reload
-docker compose up --build            # run db + app (entrypoint runs `alembic upgrade head`, then uvicorn on :8000)
+docker compose up --build            # run db + app (waits for db healthcheck; entrypoint runs `alembic upgrade head`, then uvicorn on :8000)
 
 uv run alembic upgrade head                              # apply migrations
 uv run alembic revision --autogenerate -m "<message>"    # new migration
@@ -29,7 +29,7 @@ uv run ruff check --fix . && uv run ruff format .        # lint, sort imports, f
 DATABASE_URL=postgresql+asyncpg://user_fastapi:password_fastapi@localhost:5432/app_db
 ```
 
-Other settings: `MODE` (env switcher, default `development`; reads optional `settings.toml` environments) and `ECHO_SQL` (default `True`, SQL echo on the engine). Ruff is the linter, import sorter and formatter (config in `pyproject.toml`; rules E, W, F, I, UP, B, SIM). Keep code passing `ruff check` and `ruff format --check`. Alembic runs Ruff on new migrations via `post_write_hooks`. `# ty:ignore` comments indicate the `ty` type checker is used.
+Other settings: `MODE` (env switcher, default `development`; reads optional `settings.toml` environments) and `ECHO_SQL` (default `False`, SQL echo on the engine). Ruff is the linter, import sorter and formatter (config in `pyproject.toml`; rules E, W, F, I, UP, B, SIM). Keep code passing `ruff check` and `ruff format --check`. A `pre-commit` hook runs Ruff on commit (`uv run pre-commit install` once). Alembic runs Ruff on new migrations via `post_write_hooks`; `F401` is ignored in `alembic/versions/` so the template's `op`/`sa` imports survive in empty manual migrations. Autogenerate does not detect `server_default` changes — write those migrations by hand. `# ty:ignore` comments indicate the `ty` type checker is used.
 
 ## Architecture
 
