@@ -4,15 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
+Monorepo: `backend/` (this API), `frontend/` (SvelteKit, not created yet — ADR-0002), `docs/` (ADRs, deploy, tech debt). Root holds `docker-compose.yml` (builds `./backend`), the shared `.env`/`.env.example` (Dynaconf in `backend/` finds the root `.env` by walking up), `.pre-commit-config.yaml` (Ruff limited to `^backend/`) and `.github/workflows/backend.yml` (path-filtered, `working-directory: backend`). **Run all `uv` commands from `backend/`; paths below are relative to `backend/` unless they start with `docs/`, `.github/` or name a root file.**
+
 DressMe is an async FastAPI backend (Python 3.13, managed with `uv`) backed by PostgreSQL via SQLAlchemy 2 async + asyncpg, with Alembic migrations. Code comments, log messages and GitHub issue templates are written in Portuguese.
 
 ## Commands
 
 ```bash
 uv sync                              # install deps; dev+test groups are default-groups
-docker compose up -d db              # start Postgres only (localhost:5432)
+docker compose up -d db              # (repo root) start Postgres only (localhost:5432)
 uv run fastapi dev main.py           # run the API locally with reload
-docker compose up --build            # run db + app (waits for db healthcheck; entrypoint runs `alembic upgrade head`, then uvicorn on :8000)
+docker compose up --build            # (repo root) run db + app (waits for db healthcheck; entrypoint runs `alembic upgrade head`, then uvicorn on :8000)
 
 uv run alembic upgrade head                              # apply migrations
 uv run alembic revision --autogenerate -m "<message>"    # new migration
@@ -61,7 +63,7 @@ Tests: `tests/conftest.py` sets `MODE=testing`, selecting the `[testing]` env in
 
 Config is Dynaconf only (don't add python-dotenv): `.env` + env vars override `settings.toml`. `docker-compose.yml` requires `POSTGRES_*` from `.env` (template: `.env.example`) and binds ports to 127.0.0.1. The Dockerfile syncs with `--no-default-groups` so dev/test tools stay out of the image.
 
-CI (`.github/workflows/ci.yml`): ruff, pytest with a Postgres service, `pip-audit` on prod deps (with documented `--ignore-vuln` entries tied to `docs/debito-tecnico.md`), and `docker build`. Actions are pinned by commit SHA.
+CI (`.github/workflows/backend.yml`, runs only on changes to `backend/**`, the workflow, compose or pre-commit; concurrency group is per workflow): ruff, pytest with a Postgres service, `pip-audit` on prod deps (with documented `--ignore-vuln` entries tied to `docs/debito-tecnico.md`), and `docker build`. Actions are pinned by commit SHA.
 
 Known tech debt lives in `docs/debito-tecnico.md`; update it when resolving or discovering items.
 

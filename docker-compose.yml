@@ -19,7 +19,7 @@ services:
       retries: 10
 
   app:
-    build: .
+    build: ./backend
     container_name: fastapi_app
     depends_on:
       db:
