@@ -12,5 +12,7 @@ ECHO_SQL = false
 # (ou do ambiente) com o banco `<nome>_test`, ou TEST_DATABASE_URL.
 DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/unused"
 SECRET_KEY = "chave-apenas-para-testes-nao-use-em-producao"
+# Ligado apenas nos testes específicos de rate limiting
+RATE_LIMIT_ENABLED = false
 
 [production]

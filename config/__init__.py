@@ -29,6 +29,10 @@ settings: Settings = Dynaconf(
         ),
         Validator("JWT_ALGORITHM", default="HS256", is_in=["HS256", "HS384", "HS512"]),
         Validator("ACCESS_TOKEN_EXPIRE_MINUTES", default=15, cast=int, gt=0),
+        # Rate limiting (sintaxe da lib `limits`, ex.: "5/minute")
+        Validator("RATE_LIMIT_ENABLED", default=True, is_type_of=bool),
+        Validator("RATE_LIMIT_STORAGE_URI", default="memory://"),
+        Validator("RATE_LIMIT_SIGNUP", default="5/minute"),
     ],
 )  # ty:ignore[invalid-assignment]
 

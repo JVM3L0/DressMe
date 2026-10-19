@@ -2,6 +2,7 @@ from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
 
 async def user_already_exists_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -23,4 +24,16 @@ async def request_validation_handler(
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={"detail": jsonable_encoder(errors)},
+    )
+
+
+async def rate_limit_exceeded_handler(
+    request: Request, exc: RateLimitExceeded
+) -> JSONResponse:
+    # Retry-After com a duração da janela: limite superior seguro para o cliente
+    retry_after = exc.limit.limit.get_expiry()
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"detail": "Muitas requisições. Tente novamente mais tarde."},
+        headers={"Retry-After": str(retry_after)},
     )
