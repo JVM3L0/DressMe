@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
+    "anyio>=4.12.1",
     "asyncpg>=0.31.0",
     "bcrypt>=5.0.0",
     "dynaconf>=3.2.12",
@@ -21,3 +22,9 @@ dependencies = [
 test = [
     "pytest>=9.0.2",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+markers = ["integration: requer Postgres (TEST_DATABASE_URL)"]

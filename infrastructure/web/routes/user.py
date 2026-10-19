@@ -1,22 +1,19 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, status
 
-from application.use_cases.create_user import CreateUserUseCase
-from infrastructure.auth.bcrypt_hasher import BcryptHasher
-from infrastructure.persistence.database import get_db_session
-from infrastructure.repositories.sqlalchemy_user_repository import (
-    SQLAlchemyUserRepository,
-)
+from domain.entities.user import User
+from infrastructure.web.dependencies import CreateUserUseCaseDep
 from infrastructure.web.schemas.user_schemes import UserCreate, UserPublic
 
-router = APIRouter(prefix="/users")
+router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", response_model=UserPublic)
-async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db_session)):
-    use_case = CreateUserUseCase(
-        repository=SQLAlchemyUserRepository(db), password_hasher=BcryptHasher()
+@router.post(
+    "/",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    responses={409: {"description": "E-mail ou username já registrado."}},
+)
+async def create_user(user_in: UserCreate, use_case: CreateUserUseCaseDep) -> User:
+    return await use_case.execute(
+        username=user_in.username, email=user_in.email, raw_password=user_in.password
     )
-    user_out = await use_case.execute(user_in.username, user_in.email, user_in.password)
-
-    return user_out
