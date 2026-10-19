@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from infrastructure.auth.bcrypt_hasher import BcryptHasher
 from infrastructure.persistence.database import get_db_session
@@ -78,3 +78,41 @@ async def test_create_user_returns_422_for_password_longer_than_72_bytes(
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert (await session.scalars(select(UserOrm))).all() == []
+
+
+async def test_signup_login_me_and_logout_with_real_bcrypt_and_jwt(client):
+    assert (await client.post("/users/", json=PAYLOAD)).status_code == 201
+
+    login = await client.post(
+        "/auth/login", json={"email": "joao@EXAMPLE.com", "password": "senha-segura"}
+    )
+    assert login.status_code == status.HTTP_200_OK
+
+    me = await client.get("/users/me")
+    assert me.status_code == status.HTTP_200_OK
+    assert me.json() == login.json()
+    assert me.json()["username"] == "Joao"
+
+    assert (await client.post("/auth/logout")).status_code == 204
+    assert (await client.get("/users/me")).status_code == 401
+
+
+async def test_login_with_wrong_password_returns_401(client):
+    await client.post("/users/", json=PAYLOAD)
+
+    response = await client.post(
+        "/auth/login", json={"email": "joao@example.com", "password": "senha-errada"}
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+async def test_session_of_deleted_user_is_rejected(client, session):
+    await client.post("/users/", json=PAYLOAD)
+    await client.post(
+        "/auth/login", json={"email": "joao@example.com", "password": "senha-segura"}
+    )
+
+    await session.execute(delete(UserOrm))
+
+    assert (await client.get("/users/me")).status_code == 401

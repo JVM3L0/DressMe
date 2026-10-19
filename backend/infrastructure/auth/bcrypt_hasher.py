@@ -1,3 +1,5 @@
+import secrets
+
 import bcrypt
 from anyio import to_thread
 
@@ -5,9 +7,18 @@ from anyio import to_thread
 # senhas maiores)
 BCRYPT_MAX_PASSWORD_BYTES = 72
 
+DEFAULT_ROUNDS = 12
+
+
+def make_dummy_hash(rounds: int = DEFAULT_ROUNDS) -> str:
+    """Hash de uma senha aleatória, para verificar quando o usuário não
+    existe e igualar o tempo de resposta do login"""
+    password = secrets.token_urlsafe(16).encode("utf-8")
+    return bcrypt.hashpw(password, bcrypt.gensalt(rounds)).decode("utf-8")
+
 
 class BcryptHasher:
-    def __init__(self, rounds: int = 12) -> None:
+    def __init__(self, rounds: int = DEFAULT_ROUNDS) -> None:
         self.rounds = rounds
 
     async def hash(self, password: str) -> str:

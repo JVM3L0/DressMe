@@ -12,6 +12,21 @@ async def user_already_exists_handler(request: Request, exc: Exception) -> JSONR
     )
 
 
+async def invalid_credentials_handler(request: Request, exc: Exception) -> JSONResponse:
+    # A mesma mensagem para e-mail inexistente e senha errada
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "E-mail ou senha incorretos."},
+    )
+
+
+async def not_authenticated_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "Faça login para continuar."},
+    )
+
+
 async def request_validation_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:

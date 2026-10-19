@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, status
 
 from config import settings
 from domain.entities.user import User
-from infrastructure.web.dependencies import CreateUserUseCaseDep
+from infrastructure.web.dependencies import CreateUserUseCaseDep, CurrentUserDep
 from infrastructure.web.rate_limit import limiter
 from infrastructure.web.schemas.user_schemes import UserCreate, UserPublic
 
@@ -27,3 +27,12 @@ async def create_user(
     return await use_case.execute(
         username=user_in.username, email=user_in.email, raw_password=user_in.password
     )
+
+
+@router.get(
+    "/me",
+    response_model=UserPublic,
+    responses={401: {"description": "Sem sessão ou com sessão expirada."}},
+)
+async def read_current_user(user: CurrentUserDep) -> User:
+    return user

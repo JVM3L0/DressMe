@@ -58,13 +58,14 @@ async def test_create_user_rejects_duplicates_ignoring_case(
     assert len(repository.users) == 1
 
 
-async def test_create_user_does_not_hash_password_when_user_exists(use_case, hasher):
+async def test_create_user_hashes_password_even_when_user_exists(use_case, hasher):
+    # Mesmo custo nos dois casos: o tempo de resposta não revela contas (DT-06)
     await use_case.execute("joao", "joao@example.com", "senha-segura")
 
     with pytest.raises(UserAlreadyExistsError):
         await use_case.execute("joao", "joao@example.com", "outra-senha")
 
-    assert hasher.hashed == ["senha-segura"]
+    assert hasher.hashed == ["senha-segura", "outra-senha"]
 
 
 async def test_create_user_returns_what_repository_saved(hasher):
