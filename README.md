@@ -101,13 +101,21 @@ Ao criar um novo model ORM, exporte-o em `infrastructure/persistence/models/__in
 ## Testes
 
 ```bash
-# Todos os testes
+# Todos os testes (unitários + integração)
 uv run pytest
+
+# Apenas unitários (não precisam de banco)
+uv run pytest -m "not integration"
 
 # Um arquivo ou teste específico
 uv run pytest tests/unit/test_create_user.py
 uv run pytest tests/unit/test_create_user.py::nome_do_teste
 ```
+
+- `tests/unit/`: domínio, schemas, hasher, casos de uso e API, com fakes em memória (`tests/fakes.py`).
+- `tests/integration/`: repositório, API completa e migrações no Postgres. Precisam do banco no ar (`docker compose up -d db`) e são **pulados** se ele não estiver disponível.
+
+Os testes de integração criam automaticamente os bancos `app_db_test` e `app_db_test_migrations`, e cada teste é desfeito ao final (nada fica gravado). Para usar outro servidor, defina `TEST_DATABASE_URL`.
 
 ## Lint e formatação
 
@@ -126,7 +134,15 @@ O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pr
 | Método | Rota            | Descrição                |
 | ------ | --------------- | ------------------------ |
 | GET    | `/healthcheck/` | Verifica se a API está no ar |
-| POST   | `/users/`       | Cria um novo usuário (`201`; `409` se e-mail ou username já existir) |
+| POST   | `/users/`       | Cria um novo usuário (`201`; `409` se e-mail ou username já existir; `422` se os dados forem inválidos) |
+
+Regras do cadastro:
+
+- **username:** 3 a 255 caracteres; letras, números, `_`, `.` ou `-`.
+- **email:** e-mail válido.
+- **password:** mínimo de 8 caracteres e máximo de 72 bytes (limite do bcrypt).
+
+E-mail e username não diferenciam maiúsculas: são salvos em minúsculas, e o banco garante isso com constraints `CHECK`.
 
 Exemplo de criação de usuário:
 
@@ -148,16 +164,26 @@ O projeto é dividido em camadas, e as dependências sempre apontam para dentro 
 │   ├── auth/          # bcrypt e JWT
 │   ├── persistence/   # Models SQLAlchemy, sessão do banco e Alembic
 │   ├── repositories/  # Implementações dos repositórios
-│   └── web/           # Rotas FastAPI e schemas de request/response
+│   └── web/           # Rotas, schemas, dependências (DI) e handlers de erro
 ├── config/            # Configurações (Dynaconf)
+├── docs/              # Documentação do projeto (ex.: débito técnico)
 ├── scripts/           # Entrypoint do container
-├── tests/
+├── tests/             # unit/ e integration/
 └── main.py            # Criação da aplicação FastAPI
 ```
 
 - **Entidades de domínio**, **models ORM** e **schemas web** são classes separadas; os repositórios fazem o mapeamento entre domínio e ORM.
 - Os **casos de uso** recebem suas dependências (repositório, hasher etc.) pelo construtor e expõem um método `async execute(...)`.
-- As **rotas** montam as dependências concretas e invocam o caso de uso.
+- As **rotas** recebem o caso de uso pronto via injeção de dependências do FastAPI (`infrastructure/web/dependencies.py`), o que permite substituí-lo nos testes com `app.dependency_overrides`.
+- **Erros de negócio** são exceções em `domain/exceptions/`, convertidas em respostas HTTP pelos handlers de `infrastructure/web/handlers.py`.
+
+## Segurança
+
+- Senhas são armazenadas apenas como hash bcrypt (custo 12), calculado fora do event loop.
+- Os valores das queries não aparecem em logs nem em mensagens de erro (`hide_parameters=True`).
+- Erros de validação (`422`) não devolvem o valor enviado, para não expor senhas.
+
+Pendências conhecidas estão em [docs/debito-tecnico.md](docs/debito-tecnico.md).
 
 ## Contribuindo
 

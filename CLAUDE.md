@@ -18,6 +18,7 @@ uv run alembic upgrade head                              # apply migrations
 uv run alembic revision --autogenerate -m "<message>"    # new migration
 
 uv run pytest                                            # all tests
+uv run pytest -m "not integration"                       # unit only (no DB needed)
 uv run pytest tests/unit/test_create_user.py::test_name  # single test
 
 uv run ruff check --fix . && uv run ruff format .        # lint, sort imports, format
@@ -44,8 +45,16 @@ Clean/hexagonal layering — dependencies point inward only:
   - `web/` — FastAPI routers and request/response schemas (`web/schemas/`, separate from domain entities).
 - `main.py` — creates the `FastAPI` app and includes routers.
 
-Wiring is done manually inside route handlers: the route gets an `AsyncSession` via `Depends(get_db_session)`, constructs the concrete repository/adapters, injects them into the use case, and returns the domain entity which FastAPI serializes through the `response_model` schema.
+Wiring uses FastAPI DI in `infrastructure/web/dependencies.py`: provider functions build the concrete repository/adapters and the use case, exposed as `Annotated[..., Depends(...)]` aliases (`SessionDep`, `CreateUserUseCaseDep`, ...). Routes take the use case as a parameter and return the domain entity, which FastAPI serializes through the `response_model` schema. Tests replace providers via `app.dependency_overrides`.
+
+`PasswordHasher` is async: `BcryptHasher` runs bcrypt in a worker thread (`anyio.to_thread`) so it doesn't block the event loop. bcrypt rejects passwords over 72 bytes, so `UserCreate` validates the byte length (not characters).
 
 When adding a new ORM model, export it from `infrastructure/persistence/models/__init__.py` (in `__all__`) so Alembic autogenerate sees it; importing it only for side effects elsewhere gets stripped by Ruff (F401).
 
-Business errors are plain exceptions in `domain/exceptions/`, raised by use cases and mapped to HTTP responses by handlers in `infrastructure/web/handlers.py`, registered in `main.py`. Unit tests use in-memory fakes for repository/ports and the `anyio` pytest plugin (bundled with FastAPI) for async tests.
+Business errors are plain exceptions in `domain/exceptions/`, raised by use cases and mapped to HTTP responses by handlers in `infrastructure/web/handlers.py`, registered in `main.py`. A custom `RequestValidationError` handler strips `input` from 422 responses so passwords are never echoed back.
+
+Email and username are case-insensitive: normalized to lowercase in the domain entity (`normalize_email`/`normalize_username`), in `UserCreate`, and enforced in the DB by `CHECK` constraints (`ck_users_*_lowercase`). The engine uses `hide_parameters=True` so query values never reach logs.
+
+Tests: `tests/unit/` uses in-memory fakes (`tests/fakes.py`) and the `anyio` pytest plugin (`pytestmark = pytest.mark.anyio`). `tests/integration/` (marker `integration`) runs against real Postgres at `TEST_DATABASE_URL` (default `app_db_test` on the compose DB, auto-created); each test runs in a transaction rolled back at the end (`join_transaction_mode="create_savepoint"`), and `test_migrations.py` runs Alembic upgrade/downgrade/check in a separate `*_migrations` DB. Integration tests skip if Postgres is unreachable.
+
+Known tech debt lives in `docs/debito-tecnico.md`; update it when resolving or discovering items.
