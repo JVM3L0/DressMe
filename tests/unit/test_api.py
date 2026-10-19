@@ -110,3 +110,27 @@ async def test_create_user_returns_422_for_missing_field(client, missing):
     response = await client.post("/users/", json=payload)
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+async def test_validation_error_does_not_echo_submitted_values(client):
+    response = await client.post(
+        "/users/", json=PAYLOAD | {"password": "segredo", "username": "x"}
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert "segredo" not in response.text
+    errors = response.json()["detail"]
+    assert {tuple(e["loc"]) for e in errors} == {
+        ("body", "password"),
+        ("body", "username"),
+    }
+    assert all({"type", "loc", "msg"} <= e.keys() for e in errors)
+    assert all("input" not in e for e in errors)
+
+
+async def test_validation_error_for_password_too_long_keeps_message(client):
+    response = await client.post("/users/", json=PAYLOAD | {"password": "é" * 37})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert "é" * 37 not in response.text
+    assert "72 bytes" in response.json()["detail"][0]["msg"]

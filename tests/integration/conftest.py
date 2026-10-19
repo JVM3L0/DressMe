@@ -1,45 +1,27 @@
-import os
 from collections.abc import AsyncIterator
 
 import pytest
-from sqlalchemy import URL, make_url, text
+from sqlalchemy import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 import infrastructure.persistence.models.user_model  # noqa: F401 (registra o model)
 from infrastructure.persistence.models.base import Base
-
-TEST_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL",
-    "postgresql+asyncpg://user_fastapi:password_fastapi@localhost:5432/app_db_test",
+from tests.integration.database import (
+    TEST_DATABASE_URL,
+    create_database_if_missing,
 )
-
-
-async def _create_database_if_missing(url: URL) -> None:
-    admin_engine = create_async_engine(
-        url.set(database="postgres"), isolation_level="AUTOCOMMIT"
-    )
-    try:
-        async with admin_engine.connect() as conn:
-            exists = await conn.scalar(
-                text("SELECT 1 FROM pg_database WHERE datname = :name"),
-                {"name": url.database},
-            )
-            if not exists:
-                await conn.execute(text(f'CREATE DATABASE "{url.database}"'))
-    finally:
-        await admin_engine.dispose()
 
 
 @pytest.fixture(scope="session")
 async def engine() -> AsyncIterator[AsyncEngine]:
     url = make_url(TEST_DATABASE_URL)
     try:
-        await _create_database_if_missing(url)
+        await create_database_if_missing(url)
     except (OSError, SQLAlchemyError) as exc:
         pytest.skip(f"Postgres de teste indisponível: {exc}")
 
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, hide_parameters=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

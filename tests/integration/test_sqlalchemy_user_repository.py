@@ -1,5 +1,6 @@
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, insert, select
+from sqlalchemy.exc import IntegrityError
 
 from domain.exceptions.user import UserAlreadyExistsError
 from infrastructure.persistence.models.user_model import UserOrm
@@ -90,3 +91,38 @@ async def test_exists_returns_false_for_other_user(repository):
         await repository.exists_by_email_or_username("outro@example.com", "outro")
         is False
     )
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [{"email": "Joao@example.com"}, {"username": "Joao"}],
+)
+async def test_database_rejects_non_lowercase_writes_outside_the_app(
+    session, overrides
+):
+    values = {
+        "uid": make_user().uid,
+        "username": "joao",
+        "email": "joao@example.com",
+        "hashed_password": "hash",
+    } | overrides
+
+    with pytest.raises(IntegrityError, match="lowercase"):
+        await session.execute(insert(UserOrm).values(**values))
+
+
+async def test_database_errors_do_not_expose_query_parameters(repository, session):
+    await repository.save(make_user(hashed_password="hash-secreto"))
+
+    with pytest.raises(IntegrityError) as exc:
+        await session.execute(
+            insert(UserOrm).values(
+                uid=make_user().uid,
+                username="joao",
+                email="joao@example.com",
+                hashed_password="hash-secreto",
+            )
+        )
+
+    assert "hash-secreto" not in str(exc.value)
+    assert "parameters hidden" in str(exc.value)

@@ -1,7 +1,7 @@
 import contextlib
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
-from config import settings
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncSession,
@@ -9,10 +9,12 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from config import settings
+
 
 class DatabaseSessionManager:
-    def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
-        self._engine = create_async_engine(host, **engine_kwargs)
+    def __init__(self, host: str, engine_kwargs: dict[str, Any] | None = None):
+        self._engine = create_async_engine(host, **(engine_kwargs or {}))
         self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine)
 
     async def close(self):
@@ -50,9 +52,14 @@ class DatabaseSessionManager:
             await session.close()
 
 
-sessionmanager = DatabaseSessionManager(
-    settings.DATABASE_URL, {"echo": settings.echo_sql}
-)
+ENGINE_KWARGS: dict[str, Any] = {
+    "echo": settings.echo_sql,
+    # Nunca registra os valores das queries (e-mails, hashes) em logs ou
+    # mensagens de erro
+    "hide_parameters": True,
+}
+
+sessionmanager = DatabaseSessionManager(settings.DATABASE_URL, ENGINE_KWARGS)
 
 
 async def get_db_session():
