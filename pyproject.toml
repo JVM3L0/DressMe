@@ -27,6 +27,10 @@ test = [
     "pytest>=9.0.2",
 ]
 
+[tool.uv]
+# `uv sync` / `uv run` instalam ferramentas de desenvolvimento e testes
+default-groups = ["dev", "test"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]

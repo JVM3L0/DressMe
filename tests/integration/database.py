@@ -1,11 +1,19 @@
-import os
-
-from sqlalchemy import URL, text
+from sqlalchemy import URL, make_url, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-TEST_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL",
-    "postgresql+asyncpg://user_fastapi:password_fastapi@localhost:5432/app_db_test",
+from config import settings
+
+
+def _default_test_database_url() -> str:
+    # Mesmo servidor e credenciais do DATABASE_URL, em um banco `<nome>_test`
+    url = make_url(settings.DATABASE_URL)
+    return url.set(database=f"{url.database}_test").render_as_string(
+        hide_password=False
+    )
+
+
+TEST_DATABASE_URL: str = (
+    settings.get("TEST_DATABASE_URL") or _default_test_database_url()
 )
 
 

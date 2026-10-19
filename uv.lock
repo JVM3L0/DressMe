@@ -479,6 +479,7 @@ wheels = [
 name = "dressme"
 version = "0.1.0"
 source = { virtual = "." }
+default-groups = ["dev", "test"]
 dependencies = [
     { name = "alembic" },
     { name = "anyio" },
