@@ -21,10 +21,10 @@ def test_user_create_accepts_valid_payload():
     assert user.model_dump() == VALID
 
 
-def test_user_create_normalizes_username_and_email():
+def test_user_create_strips_username_preserving_case_and_lowercases_email():
     user = make_user_create(username="  Joao.Silva_1 ", email="Joao@Example.COM")
 
-    assert user.username == "joao.silva_1"
+    assert user.username == "Joao.Silva_1"
     assert user.email == "joao@example.com"
 
 

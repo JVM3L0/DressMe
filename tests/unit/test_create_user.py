@@ -31,10 +31,10 @@ async def test_create_user_persists_user_with_hashed_password(use_case, reposito
     assert user.hashed_password == "hashed:senha-segura"
 
 
-async def test_create_user_normalizes_username_and_email(use_case):
+async def test_create_user_preserves_username_case_and_lowercases_email(use_case):
     user = await use_case.execute(" JoaO ", "Joao@Example.COM", "senha-segura")
 
-    assert user.username == "joao"
+    assert user.username == "JoaO"
     assert user.email == "joao@example.com"
 
 

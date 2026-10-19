@@ -1,4 +1,4 @@
-from sqlalchemy import exists, or_, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +34,12 @@ class SQLAlchemyUserRepository:
 
     async def exists_by_email_or_username(self, email: str, username: str) -> bool:
         stmt = select(
-            exists().where(or_(UserOrm.email == email, UserOrm.username == username))
+            exists().where(
+                or_(
+                    UserOrm.email == email,
+                    func.lower(UserOrm.username) == username.lower(),
+                )
+            )
         )
 
         return bool(await self.session.scalar(stmt))

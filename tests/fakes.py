@@ -19,7 +19,10 @@ class FakeUserRepository:
         return user
 
     async def exists_by_email_or_username(self, email: str, username: str) -> bool:
-        return any(u.email == email or u.username == username for u in self.users)
+        return any(
+            u.email == email or u.username.lower() == username.lower()
+            for u in self.users
+        )
 
 
 class FakePasswordHasher:

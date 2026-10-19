@@ -62,6 +62,23 @@ async def test_lowercase_migration_normalizes_existing_rows(engine):
     assert tuple(row) == ("joao", "joao@example.com")
 
 
+async def test_head_preserves_username_case_and_downgrade_lowercases_it(engine):
+    await alembic("upgrade", "head")
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO users (uid, username, email, hashed_password) "
+                "VALUES (gen_random_uuid(), 'Joao', 'joao@example.com', 'hash')"
+            )
+        )
+
+    await alembic("downgrade", "afa8286abd67")
+
+    async with engine.connect() as conn:
+        username = await conn.scalar(text("SELECT username FROM users"))
+    assert username == "joao"
+
+
 async def test_lowercase_migration_fails_on_case_insensitive_duplicates(engine):
     await alembic("upgrade", "61b394fd8bf1")
     async with engine.begin() as conn:

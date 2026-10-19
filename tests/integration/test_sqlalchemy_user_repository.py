@@ -75,6 +75,7 @@ async def test_exists_returns_false_when_empty(repository):
     [
         ("joao@example.com", "outro"),
         ("outro@example.com", "joao"),
+        ("outro@example.com", "JOAO"),
         ("joao@example.com", "joao"),
     ],
 )
@@ -93,22 +94,39 @@ async def test_exists_returns_false_for_other_user(repository):
     )
 
 
-@pytest.mark.parametrize(
-    "overrides",
-    [{"email": "Joao@example.com"}, {"username": "Joao"}],
-)
-async def test_database_rejects_non_lowercase_writes_outside_the_app(
-    session, overrides
-):
-    values = {
+def user_row(**overrides) -> dict:
+    return {
         "uid": make_user().uid,
         "username": "joao",
         "email": "joao@example.com",
         "hashed_password": "hash",
     } | overrides
 
-    with pytest.raises(IntegrityError, match="lowercase"):
-        await session.execute(insert(UserOrm).values(**values))
+
+async def test_save_preserves_username_case(repository, session):
+    user = make_user(username="Joao.Silva")
+
+    await repository.save(user)
+
+    assert (await session.get(UserOrm, user.uid)).username == "Joao.Silva"
+
+
+async def test_database_rejects_non_lowercase_email_outside_the_app(session):
+    with pytest.raises(IntegrityError, match="ck_users_email_lowercase"):
+        await session.execute(
+            insert(UserOrm).values(**user_row(email="Joao@example.com"))
+        )
+
+
+async def test_database_rejects_case_insensitive_duplicate_username(session):
+    await session.execute(insert(UserOrm).values(**user_row(username="Joao")))
+
+    with pytest.raises(IntegrityError, match="uq_users_username_lower"):
+        await session.execute(
+            insert(UserOrm).values(
+                **user_row(username="JOAO", email="outro@example.com")
+            )
+        )
 
 
 async def test_database_errors_do_not_expose_query_parameters(repository, session):

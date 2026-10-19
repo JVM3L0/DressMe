@@ -9,8 +9,9 @@ def normalize_email(email: str) -> str:
 
 
 def normalize_username(username: str) -> str:
-    """Usernames são únicos sem diferenciar maiúsculas e minúsculas"""
-    return username.strip().lower()
+    """Preserva a grafia escolhida pelo usuário. A unicidade não diferencia
+    maiúsculas e é garantida pelo repositório e pelo banco."""
+    return username.strip()
 
 
 class User(BaseModel, UUIDMixin, LifeCycleMixin):
