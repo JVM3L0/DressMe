@@ -25,7 +25,8 @@ API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo u
 | ORM           | SQLAlchemy 2 (async) + asyncpg               |
 | Migrações     | Alembic                                      |
 | Configuração  | Dynaconf (`.env` / variáveis de ambiente)    |
-| Autenticação  | bcrypt (hash de senha), python-jose (JWT)    |
+| Autenticação  | bcrypt (hash de senha), PyJWT (JWT)          |
+| Rate limiting | slowapi                                      |
 | Dependências  | [uv](https://docs.astral.sh/uv/)             |
 | Lint/format   | [Ruff](https://docs.astral.sh/ruff/)         |
 
@@ -63,6 +64,13 @@ API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo u
 | `MODE`         | Não         | `development` | Ambiente ativo do Dynaconf (`development`, `testing`, `production`) |
 | `ECHO_SQL`     | Não         | `False`       | Exibe no log as queries SQL executadas                 |
 | `TEST_DATABASE_URL` | Não    | `<DATABASE_URL>_test` | Banco dos testes de integração                 |
+| `SECRET_KEY`   | Sim         | —             | Chave dos tokens JWT (mínimo 32 bytes; 48 para HS384, 64 para HS512) |
+| `JWT_ALGORITHM` | Não        | `HS256`       | `HS256`, `HS384` ou `HS512`                            |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Não | `15`   | Validade do token de acesso                            |
+| `RATE_LIMIT_ENABLED` | Não   | `true`        | Liga o limite de requisições                           |
+| `RATE_LIMIT_SIGNUP` | Não    | `5/minute`    | Limite de cadastros por IP                             |
+| `RATE_LIMIT_STORAGE_URI` | Não | `memory://` | Armazenamento dos contadores (`redis://...` com várias instâncias) |
+| `FORWARDED_ALLOW_IPS` | Deploy | `127.0.0.1` | IPs de proxy confiáveis para o uvicorn (IP real do cliente) |
 
 A configuração usa o [Dynaconf](https://www.dynaconf.com/): valores por ambiente ficam em `settings.toml` e são sobrescritos pelo `.env` e pelas variáveis de ambiente. `DATABASE_URL` é validada na importação da aplicação: sem ela, a API e o Alembic não sobem.
 
@@ -187,6 +195,12 @@ O projeto é dividido em camadas, e as dependências sempre apontam para dentro 
 - Senhas são armazenadas apenas como hash bcrypt (custo 12), calculado fora do event loop.
 - Os valores das queries não aparecem em logs nem em mensagens de erro (`hide_parameters=True`).
 - Erros de validação (`422`) não devolvem o valor enviado, para não expor senhas.
+- Tokens JWT com PyJWT: apenas HMAC (`HS256`/`HS384`/`HS512`), claims `sub`, `iat` e `exp` obrigatórias, e chave validada na inicialização. Configuração inválida impede a API de subir.
+- Cadastro limitado a 5 requisições por minuto por IP (`429` com `Retry-After`).
+
+### Deploy atrás de proxy
+
+O limite usa o IP do cliente. Atrás de um proxy ou plataforma de deploy, defina `FORWARDED_ALLOW_IPS` com os IPs do proxy (ou `*`, se a API só for acessível por ele) para o uvicorn usar o `X-Forwarded-For`. Sem isso, todos os clientes compartilham o limite do IP do proxy. Com mais de uma instância, use um `RATE_LIMIT_STORAGE_URI` compartilhado (ex.: Redis).
 
 Pendências conhecidas estão em [docs/debito-tecnico.md](docs/debito-tecnico.md).
 

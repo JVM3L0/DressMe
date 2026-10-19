@@ -41,7 +41,7 @@ Clean/hexagonal layering — dependencies point inward only:
 - `infrastructure/` — adapters implementing the protocols:
   - `persistence/` — SQLAlchemy ORM models (`*Orm`, separate from domain entities, with parallel `SQLUUIDMixin`/`SQLLifeCycleMixin`), `Base` with a constraint naming convention, `DatabaseSessionManager` + `get_db_session` FastAPI dependency, and the Alembic env (`script_location` is `infrastructure/persistence/alembic`; URL comes from `settings`, not `alembic.ini`).
   - `repositories/` — SQLAlchemy implementations of repository protocols; responsible for mapping domain entity ↔ ORM model and committing.
-  - `auth/` — `BcryptHasher`, `JWTService` (python-jose, HS256).
+  - `auth/` — `BcryptHasher`, `JWTService` (PyJWT; HMAC only, per-algorithm min key bytes, required `sub`/`iat`/`exp`; `verify_token` returns `None` on any invalid token). `get_token_service` returns a singleton built at import so bad JWT config fails at startup.
   - `web/` — FastAPI routers and request/response schemas (`web/schemas/`, separate from domain entities).
 - `main.py` — creates the `FastAPI` app and includes routers.
 
@@ -56,6 +56,8 @@ Business errors are plain exceptions in `domain/exceptions/`, raised by use case
 Email and username are unique case-insensitively. Email is lowercased (domain `normalize_email`, `UserCreate`) and enforced by `CHECK ck_users_email_lowercase`. Username keeps its original casing (`normalize_username` only strips); uniqueness is by `lower(username)` in the repository query and the `uq_users_username_lower` functional unique index (declared at module level in `user_model.py`). The engine uses `hide_parameters=True` so query values never reach logs.
 
 Tests: `tests/conftest.py` sets `MODE=testing`, selecting the `[testing]` env in `settings.toml` (placeholder `DATABASE_URL` so unit tests import without a `.env`). `tests/unit/` uses in-memory fakes (`tests/fakes.py`) and the `anyio` pytest plugin (`pytestmark = pytest.mark.anyio`). `tests/integration/` (marker `integration`) runs against real Postgres at `TEST_DATABASE_URL` (default: `DATABASE_URL` with database `<name>_test`, auto-created); each test runs in a transaction rolled back at the end (`join_transaction_mode="create_savepoint"`), and `test_migrations.py` runs Alembic upgrade/downgrade/check in a separate `*_migrations` DB. Integration tests skip if Postgres is unreachable, but fail when `CI` is set.
+
+`SECRET_KEY` is required (custom validator message so the value never appears in errors; `[testing]` in `settings.toml` provides a test key). Signup is rate limited with slowapi (`infrastructure/web/rate_limit.py`, per client IP, moving window, `RATE_LIMIT_*` settings); decorated endpoints need a `request: Request` param. The limiter is disabled in the testing env; `tests/unit/test_rate_limit.py` enables it per test and calls `limiter.reset()`. Behind a proxy, uvicorn needs `FORWARDED_ALLOW_IPS` to see real client IPs.
 
 Config is Dynaconf only (don't add python-dotenv): `.env` + env vars override `settings.toml`. `docker-compose.yml` requires `POSTGRES_*` from `.env` (template: `.env.example`) and binds ports to 127.0.0.1. The Dockerfile syncs with `--no-default-groups` so dev/test tools stay out of the image.
 
