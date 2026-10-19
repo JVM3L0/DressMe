@@ -4,7 +4,28 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
-		<meta name="theme-color" content="#1f2c5c" />
+		<meta name="theme-color" content="#f9f5d7" />
+		<script>
+			// Aplica o tema escolhido antes da primeira pintura, para não piscar o
+			// tema errado. Mantenha em sincronia com src/lib/theme.ts.
+			(() => {
+				let saved = null;
+				try {
+					saved = localStorage.getItem('theme');
+				} catch {
+					// Armazenamento indisponível: segue o tema do sistema
+				}
+				if (saved === 'light' || saved === 'dark') {
+					document.documentElement.dataset.theme = saved;
+				}
+				const dark =
+					saved === 'dark' ||
+					(saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+				document
+					.querySelector('meta[name="theme-color"]')
+					.setAttribute('content', dark ? '#1d2021' : '#f9f5d7');
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

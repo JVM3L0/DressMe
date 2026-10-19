@@ -1,7 +1,8 @@
 /*
  * Tokens de design do VirtualFit.
  * Paleta: Gruvbox (https://github.com/morhetz/gruvbox). Tema claro "hard" por
- * padrão e escuro "hard" quando o sistema pede; textos usam as variantes de
+ * padrão e escuro "hard" quando o sistema pede ou quando a pessoa escolhe
+ * (atributo data-theme, ver src/lib/theme.ts); textos usam as variantes de
  * contraste AA (>= 4.5:1). A etiqueta é sempre amarela e clara, como uma
  * etiqueta de papel, nos dois temas.
  */
@@ -66,8 +67,13 @@
 	--duration-quick: 150ms;
 }
 
+/*
+ * Os tokens escuros aparecem duas vezes: light-dark() evitaria a repetição,
+ * mas não funciona no Safari 16, que está nos requisitos (RNF05).
+ */
 @media (prefers-color-scheme: dark) {
-	:root {
+	:root:not([data-theme='light']) {
+		color-scheme: dark;
 		/* Gruvbox escuro */
 		--color-bg: #1d2021;
 		--color-surface: #282828;
@@ -81,6 +87,26 @@
 		--color-success: #b8bb26;
 		--color-focus: #fabd2f;
 	}
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+	/* Gruvbox escuro */
+	--color-bg: #1d2021;
+	--color-surface: #282828;
+	--color-text: #ebdbb2;
+	--color-text-muted: #a89984;
+	--color-border: #a89984;
+	--color-border-subtle: #504945;
+	--color-primary: #83a598;
+	--color-on-primary: #1d2021;
+	--color-danger: #fb4934;
+	--color-success: #b8bb26;
+	--color-focus: #fabd2f;
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
 }
 
 *,
