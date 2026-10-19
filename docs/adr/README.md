@@ -7,6 +7,8 @@ Cada arquivo registra uma decisão de arquitetura ou de escopo: o contexto, o qu
 | [0001](0001-escopo-prova-de-conceito.md) | Escopo da prova de conceito, sem IA | Aceito |
 | [0002](0002-monorepo-e-sveltekit.md) | Monorepo com frontend em SvelteKit | Aceito |
 | [0003](0003-armazenamento-local-de-imagens-com-nginx.md) | Imagens em disco local, servidas pelo nginx | Aceito |
+| [0004](0004-frontend-estatico-com-api-em-api.md) | Frontend estático, com a API na mesma origem em `/api` | Aceito |
+| [0005](0005-versionamento-semantico-por-branch.md) | Versionamento semântico por branch | Aceito |
 
 ## Modelo
 

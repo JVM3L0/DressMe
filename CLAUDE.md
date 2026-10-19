@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Monorepo: `backend/` (this API), `frontend/` (SvelteKit, not created yet — ADR-0002), `docs/` (ADRs, deploy, tech debt). Root holds `docker-compose.yml` (builds `./backend`), the shared `.env`/`.env.example` (Dynaconf in `backend/` finds the root `.env` by walking up), `.pre-commit-config.yaml` (Ruff limited to `^backend/`) and `.github/workflows/backend.yml` (path-filtered, `working-directory: backend`). **Run all `uv` commands from `backend/`; paths below are relative to `backend/` unless they start with `docs/`, `.github/` or name a root file.**
+Monorepo: `backend/` (this API), `frontend/` (SvelteKit — see the Frontend section), `docs/` (ADRs, deploy, tech debt), `CHANGELOG.md`. Root holds `docker-compose.yml` (builds `./backend`), the shared `.env`/`.env.example` (Dynaconf in `backend/` finds the root `.env` by walking up), `.pre-commit-config.yaml` (Ruff limited to `^backend/`) and `.github/workflows/backend.yml` (path-filtered, `working-directory: backend`). **Run all `uv` commands from `backend/`; paths below are relative to `backend/` unless they start with `docs/`, `.github/` or name a root file.**
 
 DressMe is an async FastAPI backend (Python 3.13, managed with `uv`) backed by PostgreSQL via SQLAlchemy 2 async + asyncpg, with Alembic migrations. Code comments, log messages and GitHub issue templates are written in Portuguese.
 
@@ -68,3 +68,27 @@ CI (`.github/workflows/backend.yml`, runs only on changes to `backend/**`, the w
 Known tech debt lives in `docs/debito-tecnico.md`; update it when resolving or discovering items.
 
 Architecture/scope decisions are ADRs in `docs/adr/` (accepted ADRs are never edited; supersede with a new one). The project is a **proof of concept of VirtualFit** (virtual clothing try-on) without AI (ADR-0001): manual try-on in the browser, a planned monorepo with a SvelteKit frontend (ADR-0002), and images on local disk served by nginx via `X-Accel-Redirect`, never public (ADR-0003). Check new work against these ADRs.
+
+## Frontend
+
+`frontend/`: SvelteKit 3 + Svelte 5 runes + TypeScript, `adapter-static` (all pages prerendered, `200.html` SPA fallback; ADR-0004). Node 24 LTS via `frontend/.node-version` (installed with fnm at `~/.local/share/fnm`; run `eval "$(~/.local/share/fnm/fnm env)"` in non-login shells). Run `npm` commands from `frontend/`:
+
+```bash
+npm run dev        # :5173; Vite proxies /api/* to the API (prefix stripped; API_PROXY_TARGET overrides)
+npm run check      # svelte-check
+npm run lint       # prettier --check + eslint
+npm test           # vitest: "server" project (Node, *.spec.ts) + "client" project (Chromium, *.svelte.spec.ts)
+npm run build
+npm run api:sync   # backend → src/lib/api/openapi.json (scripts/export_openapi.py) → src/lib/api/schema.ts
+```
+
+- Internal imports use `#lib/...` **with explicit extensions** (`#lib/api/client.ts`); SvelteKit 3 maps `#lib/*` → `src/lib/*` with `allowImportingTsExtensions`. Use `resolve()` from `$app/paths` for internal `href`s (ESLint enforces it).
+- API calls go through `api` (`src/lib/api/client.ts`, openapi-fetch typed by the generated `schema.ts`; same origin under `/api`, so no CORS). `fetch` is resolved per request so tests can `vi.stubGlobal('fetch', ...)`. Never edit `openapi.json`/`schema.ts` by hand; the frontend CI `contract` job fails if they're stale. `openapi-typescript` is pinned to the project's TS 6 via `overrides` (it only declares TS 5 as a peer).
+- Keep logic out of components: `src/lib/signup/validation.ts` (rules mirroring backend `UserCreate`, pt-BR messages shared with API 422 mapping in `src/lib/api/errors.ts`) and `submit.ts` (maps HTTP outcomes to a discriminated `SignupResult`).
+- Design system lives in `src/app.css` tokens: Gruvbox palette (light "hard" default, dark via `prefers-color-scheme`; text pairs checked ≥ 4.5:1), Bodoni Moda (display) + Figtree (body) self-hosted via `@fontsource-variable`, 1.25 type scale. `HangTag.svelte` (yellow clothing tag) is the single signature element; components read `--field-*`/`--button-*` custom properties so the tag can restyle them. UX rules: validate on blur (not per keystroke), error replaces hint, focus first invalid field on submit, `role="alert"` region stays in the DOM, 44px touch targets, visible focus.
+- Component tests need Chromium system libs; locally they can run in `mcr.microsoft.com/playwright:v<playwright version>-noble` (see `frontend/README.md`).
+
+## Versioning
+
+Each branch is the next product version, `<type>/<X.Y.Z>-<slug>` (ADR-0005): `feat` bumps minor, other types bump patch. Bump `backend/pyproject.toml` and `frontend/package.json` together (the API exposes the version from pyproject via `config.APP_VERSION`) and add a `CHANGELOG.md` entry.
+

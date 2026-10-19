@@ -5,10 +5,10 @@ Prova de conceito do **VirtualFit**, uma plataforma de prova virtual de roupas (
 | Pasta | Conteúdo |
 | --- | --- |
 | [`backend/`](backend/) | API em **FastAPI** e **PostgreSQL**, com arquitetura em camadas (Clean Architecture / Hexagonal) |
-| `frontend/` | SvelteKit (em breve, [ADR-0002](docs/adr/0002-monorepo-e-sveltekit.md)) |
+| [`frontend/`](frontend/) | Web app em **SvelteKit**, mobile-first, gerado como site estático ([ADR-0004](docs/adr/0004-frontend-estatico-com-api-em-api.md)) |
 | [`docs/`](docs/) | Decisões (ADRs), deploy e débito técnico |
 
-Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pelo backend), o CI e o pre-commit. **Os comandos `uv` deste README rodam dentro de `backend/`.**
+Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pelo backend), o [`CHANGELOG.md`](CHANGELOG.md), o CI e o pre-commit. **Os comandos `uv` rodam dentro de `backend/`, e os `npm`, dentro de `frontend/`.**
 
 ## Sumário
 
@@ -16,6 +16,7 @@ Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pel
 - [Pré-requisitos](#pré-requisitos)
 - [Configuração](#configuração)
 - [Executando](#executando)
+- [Frontend](#frontend)
 - [Migrações](#migrações)
 - [Testes](#testes)
 - [Lint e formatação](#lint-e-formatação)
@@ -38,10 +39,19 @@ Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pel
 | Dependências  | [uv](https://docs.astral.sh/uv/)             |
 | Lint/format   | [Ruff](https://docs.astral.sh/ruff/)         |
 
+| Frontend      | Tecnologia                                   |
+| ------------- | -------------------------------------------- |
+| Framework     | SvelteKit 3 + Svelte 5 (TypeScript), `adapter-static` |
+| Cliente da API | `openapi-fetch`, tipos gerados com `openapi-typescript` |
+| Testes        | Vitest (Node e Chromium via Playwright)      |
+| Lint/format   | ESLint + Prettier                            |
+| Node          | 24 LTS (`frontend/.node-version`)            |
+
 ## Pré-requisitos
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) (instala o Python 3.13 automaticamente, se necessário)
 - [Docker](https://docs.docker.com/get-docker/) e Docker Compose
+- [Node.js 24 LTS](https://nodejs.org/), de preferência por um gerenciador de versões como o [fnm](https://github.com/Schniz/fnm), que lê o `frontend/.node-version`
 
 ## Configuração
 
@@ -52,6 +62,8 @@ Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pel
    cd DressMe/backend
    uv sync                     # inclui as ferramentas de dev e testes
    uv run pre-commit install   # roda o Ruff antes de cada commit (vale para o repositório todo)
+   cd ../frontend
+   npm install
    ```
 
 2. Na **raiz** do repositório, crie o `.env` a partir do exemplo e troque a senha (o `.env` é ignorado pelo Git):
@@ -85,18 +97,25 @@ A configuração usa o [Dynaconf](https://www.dynaconf.com/): valores por ambien
 
 ## Executando
 
-### Desenvolvimento local
+### Desenvolvimento local (as duas stacks)
 
-Suba apenas o banco com Docker e rode a API localmente com hot reload:
+Use três terminais, todos a partir da raiz do repositório:
 
 ```bash
-docker compose up -d db      # na raiz
+# 1. Banco
+docker compose up -d db
+
+# 2. API, com recarga automática: http://localhost:8000 (documentação em /docs)
 cd backend
 uv run alembic upgrade head
 uv run fastapi dev main.py
+
+# 3. Frontend, com recarga automática: http://localhost:5173
+cd frontend
+npm run dev
 ```
 
-A API fica disponível em <http://localhost:8000> e a documentação interativa em <http://localhost:8000/docs>.
+Abra <http://localhost:5173>. O frontend chama a API em `/api`, e o Vite repassa para `http://localhost:8000` (para outro endereço, use `API_PROXY_TARGET`). O rodapé mostra "API x.y.z conectada" quando a integração está funcionando.
 
 ### Tudo via Docker
 
@@ -104,7 +123,20 @@ A API fica disponível em <http://localhost:8000> e a documentação interativa 
 docker compose up --build
 ```
 
-O container da aplicação aguarda o Postgres ficar saudável (healthcheck), executa `alembic upgrade head` e inicia o servidor na porta `8000`. As portas do banco e da API ficam acessíveis apenas pela própria máquina (`127.0.0.1`).
+O container da aplicação aguarda o Postgres ficar saudável (healthcheck), executa `alembic upgrade head` e inicia o servidor na porta `8000`. As portas do banco e da API ficam acessíveis apenas pela própria máquina (`127.0.0.1`). Por enquanto, o frontend roda fora do Docker, com `npm run dev`. Ele vai para o compose junto com o nginx ([ADR-0003](docs/adr/0003-armazenamento-local-de-imagens-com-nginx.md)).
+
+## Frontend
+
+Comandos, estrutura e convenções estão em [frontend/README.md](frontend/README.md). Os principais:
+
+```bash
+cd frontend
+npm run check      # tipos
+npm run lint       # Prettier + ESLint
+npm test           # unidade e componentes (os de componente precisam do Chromium)
+npm run build      # site estático em build/
+npm run api:sync   # atualiza os tipos da API depois de mudar o backend
+```
 
 ## Migrações
 
@@ -221,16 +253,25 @@ Decisões de arquitetura e escopo estão registradas em [docs/adr/](docs/adr/REA
 
 ## CI
 
-O workflow [`.github/workflows/backend.yml`](.github/workflows/backend.yml) roda em PRs e pushes para `develop`, `staging` e `main` **quando há mudanças em `backend/`** (ou no próprio workflow, no compose e no pre-commit):
+Os workflows rodam em PRs e pushes para `develop`, `staging` e `main`, conforme as pastas alteradas.
+
+[`backend.yml`](.github/workflows/backend.yml) roda quando muda `backend/`, o próprio workflow, o compose ou o pre-commit:
 
 - **Lint e formatação:** `ruff check` e `ruff format --check`;
-- **Testes:** suíte completa com um Postgres de serviço (os testes de integração não são pulados);
+- **Testes:** suíte completa com Postgres e Redis de serviço (os testes de integração não são pulados);
 - **Auditoria:** `pip-audit` nas dependências de produção;
 - **Build da imagem:** `docker build`.
 
+[`frontend.yml`](.github/workflows/frontend.yml) roda quando muda `frontend/` ou `backend/`:
+
+- **Qualidade:** lint, tipos e build;
+- **Testes:** unidade e componentes no Chromium;
+- **Contrato da API:** falha se os tipos gerados do OpenAPI estiverem desatualizados em relação ao backend;
+- **Auditoria:** `npm audit` nas dependências de produção.
+
 ## Contribuindo
 
-1. Abra uma issue usando o template **🚀 Nova Task** (`.github/ISSUE_TEMPLATE/feature_request.md`).
-2. Crie uma branch a partir da `develop`, no formato `<tipo>/<N.M>-<descrição>`: `N` é o número do último PR/issue no GitHub e `M` é a sequência (ex.: `chore/6.1-monorepo`).
+1. Crie uma branch a partir da `develop` com o nome da **próxima versão** ([ADR-0005](docs/adr/0005-versionamento-semantico-por-branch.md)): `<tipo>/<X.Y.Z>-<descrição>`. `feat` sobe o minor e os demais tipos sobem o patch (ex.: de `0.2.0`, `feat/0.3.0-guarda-roupa` ou `fix/0.2.1-...`).
+2. Atualize a versão em `backend/pyproject.toml` e `frontend/package.json`, e adicione a entrada no [`CHANGELOG.md`](CHANGELOG.md).
 3. Use mensagens de commit no padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br/) (`feat:`, `fix:`, `chore:` ...).
-4. Garanta que `uv run ruff check .`, `uv run ruff format --check .` e `uv run pytest` passam (em `backend/`), e abra um Pull Request para a `develop`.
+4. Garanta que o lint e os testes passam nas pastas alteradas, e abra um Pull Request para a `develop`. Depois do merge, a versão recebe a tag `vX.Y.Z`.
