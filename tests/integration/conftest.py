@@ -5,8 +5,7 @@ from sqlalchemy import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-import infrastructure.persistence.models.user_model  # noqa: F401 (registra o model)
-from infrastructure.persistence.models.base import Base
+from infrastructure.persistence.models import Base
 from tests.integration.database import (
     TEST_DATABASE_URL,
     create_database_if_missing,
