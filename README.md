@@ -41,25 +41,30 @@ API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo u
    ```bash
    git clone git@github.com:JVM3L0/DressMe.git
    cd DressMe
-   uv sync --all-groups
+   uv sync                     # inclui as ferramentas de dev e testes
    uv run pre-commit install   # roda o Ruff antes de cada commit
    ```
 
-2. Crie um arquivo `.env` na raiz do projeto (já ignorado pelo Git):
+2. Crie o `.env` a partir do exemplo e troque a senha (o `.env` é ignorado pelo Git):
 
-   ```env
-   DATABASE_URL=postgresql+asyncpg://user_fastapi:password_fastapi@localhost:5432/app_db
+   ```bash
+   cp .env.example .env
    ```
+
+   As credenciais `POSTGRES_*` são aplicadas quando o volume do banco é criado. Se você já tem um volume, use as credenciais com que ele foi criado.
 
 ### Variáveis de ambiente
 
 | Variável       | Obrigatória | Padrão        | Descrição                                              |
 | -------------- | ----------- | ------------- | ------------------------------------------------------ |
 | `DATABASE_URL` | Sim         | —             | URL de conexão async (`postgresql+asyncpg://...`)      |
-| `MODE`         | Não         | `development` | Ambiente ativo do Dynaconf                             |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Sim (compose) | — | Credenciais do Postgres do `docker compose` |
+| `POSTGRES_PORT` | Não        | `5432`        | Porta local do Postgres no compose                     |
+| `MODE`         | Não         | `development` | Ambiente ativo do Dynaconf (`development`, `testing`, `production`) |
 | `ECHO_SQL`     | Não         | `False`       | Exibe no log as queries SQL executadas                 |
+| `TEST_DATABASE_URL` | Não    | `<DATABASE_URL>_test` | Banco dos testes de integração                 |
 
-> `DATABASE_URL` é validada na importação da aplicação: sem ela, a API, o Alembic e os testes não sobem.
+A configuração usa o [Dynaconf](https://www.dynaconf.com/): valores por ambiente ficam em `settings.toml` e são sobrescritos pelo `.env` e pelas variáveis de ambiente. `DATABASE_URL` é validada na importação da aplicação: sem ela, a API e o Alembic não sobem.
 
 ## Executando
 
@@ -81,7 +86,7 @@ A API fica disponível em <http://localhost:8000> e a documentação interativa 
 docker compose up --build
 ```
 
-O container da aplicação aguarda o Postgres ficar saudável (healthcheck), executa `alembic upgrade head` e inicia o servidor na porta `8000`.
+O container da aplicação aguarda o Postgres ficar saudável (healthcheck), executa `alembic upgrade head` e inicia o servidor na porta `8000`. As portas do banco e da API ficam acessíveis apenas pela própria máquina (`127.0.0.1`).
 
 ## Migrações
 
@@ -115,7 +120,7 @@ uv run pytest tests/unit/test_create_user.py::nome_do_teste
 - `tests/unit/`: domínio, schemas, hasher, casos de uso e API, com fakes em memória (`tests/fakes.py`).
 - `tests/integration/`: repositório, API completa e migrações no Postgres. Precisam do banco no ar (`docker compose up -d db`) e são **pulados** se ele não estiver disponível.
 
-Os testes de integração criam automaticamente os bancos `app_db_test` e `app_db_test_migrations`, e cada teste é desfeito ao final (nada fica gravado). Para usar outro servidor, defina `TEST_DATABASE_URL`.
+Os testes rodam no ambiente `testing` do Dynaconf. Os de integração usam o servidor do `DATABASE_URL` e criam automaticamente os bancos `<nome>_test` e `<nome>_test_migrations`; cada teste é desfeito ao final (nada fica gravado). Para usar outro banco, defina `TEST_DATABASE_URL`. No CI (`CI=true`), a falta do banco faz os testes falharem em vez de serem pulados.
 
 ## Lint e formatação
 
@@ -138,11 +143,11 @@ O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pr
 
 Regras do cadastro:
 
-- **username:** 3 a 255 caracteres; letras, números, `_`, `.` ou `-`.
+- **username:** 3 a 255 caracteres; letras, números, `_`, `.` ou `-`. A grafia é preservada.
 - **email:** e-mail válido.
 - **password:** mínimo de 8 caracteres e máximo de 72 bytes (limite do bcrypt).
 
-E-mail e username não diferenciam maiúsculas: são salvos em minúsculas, e o banco garante isso com constraints `CHECK`.
+E-mail e username não diferenciam maiúsculas na verificação de duplicados. O e-mail é salvo em minúsculas (constraint `CHECK`); o username mantém a grafia original e é único por `lower(username)` (índice único).
 
 Exemplo de criação de usuário:
 
@@ -184,6 +189,15 @@ O projeto é dividido em camadas, e as dependências sempre apontam para dentro 
 - Erros de validação (`422`) não devolvem o valor enviado, para não expor senhas.
 
 Pendências conhecidas estão em [docs/debito-tecnico.md](docs/debito-tecnico.md).
+
+## CI
+
+O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda em PRs e pushes para `develop`, `staging` e `main`:
+
+- **Lint e formatação:** `ruff check` e `ruff format --check`;
+- **Testes:** suíte completa com um Postgres de serviço (os testes de integração não são pulados);
+- **Auditoria:** `pip-audit` nas dependências de produção;
+- **Build da imagem:** `docker build`.
 
 ## Contribuindo
 

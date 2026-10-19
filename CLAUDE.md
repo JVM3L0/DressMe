@@ -9,7 +9,7 @@ DressMe is an async FastAPI backend (Python 3.13, managed with `uv`) backed by P
 ## Commands
 
 ```bash
-uv sync --all-groups                 # install deps (incl. pytest and ruff)
+uv sync                              # install deps; dev+test groups are default-groups
 docker compose up -d db              # start Postgres only (localhost:5432)
 uv run fastapi dev main.py           # run the API locally with reload
 docker compose up --build            # run db + app (waits for db healthcheck; entrypoint runs `alembic upgrade head`, then uvicorn on :8000)
@@ -53,8 +53,12 @@ When adding a new ORM model, export it from `infrastructure/persistence/models/_
 
 Business errors are plain exceptions in `domain/exceptions/`, raised by use cases and mapped to HTTP responses by handlers in `infrastructure/web/handlers.py`, registered in `main.py`. A custom `RequestValidationError` handler strips `input` from 422 responses so passwords are never echoed back.
 
-Email and username are case-insensitive: normalized to lowercase in the domain entity (`normalize_email`/`normalize_username`), in `UserCreate`, and enforced in the DB by `CHECK` constraints (`ck_users_*_lowercase`). The engine uses `hide_parameters=True` so query values never reach logs.
+Email and username are unique case-insensitively. Email is lowercased (domain `normalize_email`, `UserCreate`) and enforced by `CHECK ck_users_email_lowercase`. Username keeps its original casing (`normalize_username` only strips); uniqueness is by `lower(username)` in the repository query and the `uq_users_username_lower` functional unique index (declared at module level in `user_model.py`). The engine uses `hide_parameters=True` so query values never reach logs.
 
-Tests: `tests/unit/` uses in-memory fakes (`tests/fakes.py`) and the `anyio` pytest plugin (`pytestmark = pytest.mark.anyio`). `tests/integration/` (marker `integration`) runs against real Postgres at `TEST_DATABASE_URL` (default `app_db_test` on the compose DB, auto-created); each test runs in a transaction rolled back at the end (`join_transaction_mode="create_savepoint"`), and `test_migrations.py` runs Alembic upgrade/downgrade/check in a separate `*_migrations` DB. Integration tests skip if Postgres is unreachable.
+Tests: `tests/conftest.py` sets `MODE=testing`, selecting the `[testing]` env in `settings.toml` (placeholder `DATABASE_URL` so unit tests import without a `.env`). `tests/unit/` uses in-memory fakes (`tests/fakes.py`) and the `anyio` pytest plugin (`pytestmark = pytest.mark.anyio`). `tests/integration/` (marker `integration`) runs against real Postgres at `TEST_DATABASE_URL` (default: `DATABASE_URL` with database `<name>_test`, auto-created); each test runs in a transaction rolled back at the end (`join_transaction_mode="create_savepoint"`), and `test_migrations.py` runs Alembic upgrade/downgrade/check in a separate `*_migrations` DB. Integration tests skip if Postgres is unreachable, but fail when `CI` is set.
+
+Config is Dynaconf only (don't add python-dotenv): `.env` + env vars override `settings.toml`. `docker-compose.yml` requires `POSTGRES_*` from `.env` (template: `.env.example`) and binds ports to 127.0.0.1. The Dockerfile syncs with `--no-default-groups` so dev/test tools stay out of the image.
+
+CI (`.github/workflows/ci.yml`): ruff, pytest with a Postgres service, `pip-audit` on prod deps (with documented `--ignore-vuln` entries tied to `docs/debito-tecnico.md`), and `docker build`. Actions are pinned by commit SHA.
 
 Known tech debt lives in `docs/debito-tecnico.md`; update it when resolving or discovering items.
