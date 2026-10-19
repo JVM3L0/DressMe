@@ -19,7 +19,8 @@ O nginx é a entrada pública, e a API não deve ser exposta diretamente. Atrás
 | `FORWARDED_ALLOW_IPS` | Sim, atrás de proxy | IPs do proxy da plataforma, ou `*` (ver abaixo) |
 | `PORT` | Não | Porta exigida pela plataforma, se houver |
 | `RATE_LIMIT_STORAGE_URI` | Só com mais de uma instância | `redis://...` |
-| `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `RATE_LIMIT_SIGNUP` | Não | Padrões: `HS256`, `15`, `5/minute` |
+| `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `RATE_LIMIT_SIGNUP`, `RATE_LIMIT_LOGIN` | Não | Padrões: `HS256`, `10080` (uma semana, [ADR-0006](adr/0006-sessao-em-cookie-e-protecao-de-contas.md)), `5/minute`, `10/minute` |
+| `AUTH_COOKIE_SECURE` | Não | Padrão `true`: o cookie da sessão só trafega por HTTPS. Só fica `false` em `development` e `testing` |
 
 A API valida a configuração ao iniciar e **não sobe** se faltar `DATABASE_URL` ou `SECRET_KEY`, ou se elas forem inválidas.
 
@@ -33,7 +34,11 @@ Assina os tokens JWT. Se vazar, qualquer pessoa pode gerar tokens válidos.
   ```
 - Tamanho mínimo: 32 bytes para `HS256` (48 para `HS384` e 64 para `HS512`). O comando acima gera 64 caracteres.
 - Use uma chave diferente por ambiente (staging e produção). Nunca use a do `backend/settings.toml` (ambiente de testes) nem a do `.env` local.
-- Trocar a chave invalida todos os tokens emitidos.
+- Trocar a chave invalida todos os tokens emitidos. É também a única forma de encerrar **todas** as sessões de uma vez, já que o logout só apaga o cookie do navegador ([ADR-0006](adr/0006-sessao-em-cookie-e-protecao-de-contas.md)).
+
+### HTTPS e cookie da sessão
+
+O login grava a sessão num cookie `HttpOnly`, `SameSite=Strict` e, em produção, `Secure`. Sem HTTPS, o navegador descarta o cookie e o login parece funcionar, mas a sessão não persiste. A plataforma (ou o nginx) precisa servir o site por HTTPS antes do primeiro login.
 
 ### `FORWARDED_ALLOW_IPS`
 
@@ -65,5 +70,6 @@ O suporte já está instalado (`limits[redis]`), e o teste `backend/tests/integr
 3. Verifique:
    - `GET /healthcheck/` responde `200`;
    - `POST /users/` cria um usuário (`201`);
+   - `POST /auth/login` responde `200` com `Set-Cookie: virtualfit_session=...; HttpOnly; Secure; SameSite=Strict`, e `GET /users/me` responde `200` em seguida;
    - o teste de rate limit da seção [`FORWARDED_ALLOW_IPS`](#forwarded_allow_ips) passa.
 4. Nos logs, confirme que não aparecem valores de queries (`ECHO_SQL` desligado e parâmetros ocultos).

@@ -2,32 +2,29 @@
 
 Pendências conhecidas que ficaram fora das entregas atuais. Ao resolver um item, remova-o daqui no mesmo PR, sem renumerar os demais. Ao encontrar um novo, adicione-o com o próximo ID, evidência e proposta.
 
-Resolvidos: DT-01 (dependências atualizadas), DT-02 (PyJWT e `SECRET_KEY`), DT-03 (rate limiting), DT-04 (CI), DT-05 (Postgres local e credenciais no `.env`) e DT-08 (grafia do username).
+Resolvidos:
+- DT-01: dependências atualizadas;
+- DT-02: PyJWT e `SECRET_KEY`;
+- DT-03: rate limiting;
+- DT-04: CI;
+- DT-05: Postgres local e credenciais no `.env`;
+- DT-06: enumeração de contas ([ADR-0006](adr/0006-sessao-em-cookie-e-protecao-de-contas.md));
+- DT-07: política de senha;
+- DT-08: grafia do username;
+- DT-09: CSP.
 
 **Prioridade:** 🔴 alta (risco de segurança ou indisponibilidade) · 🟡 média · 🟢 baixa
 
 | ID | Prioridade | Tema | Resumo |
 | --- | --- | --- | --- |
-| [DT-06](#dt-06-enumeração-de-contas-no-cadastro) | 🟡 | Produto / Segurança | Enumeração de contas no cadastro |
-| [DT-07](#dt-07-política-de-senha-mínima) | 🟢 | Segurança | Política de senha mínima |
-| [DT-09](#dt-09-sem-content-security-policy) | 🟡 | Segurança | Sem Content Security Policy |
+| [DT-10](#dt-10-sessões-sem-revogação) | 🟢 | Segurança | Sessões sem revogação |
 
 ---
 
-### DT-06: Enumeração de contas no cadastro
+### DT-10: Sessões sem revogação
 
-- **Evidência:** e-mail já cadastrado retorna `409` em cerca de 2 ms; e-mail novo retorna `201` em cerca de 190 ms. Pela resposta ou pelo tempo, é possível descobrir quem tem conta.
-- **Proposta:** é uma decisão de produto.
-  - Já mitigado pelo rate limiting de cadastro (5/min por IP).
-  - Para eliminar o problema: confirmação por e-mail, com resposta idêntica (`202`) nos dois casos.
-
-### DT-07: Política de senha mínima
-
-- **Evidência:** a única regra é ter de 8 caracteres a 72 bytes. Senhas como `12345678` são aceitas.
-- **Proposta:** recusar senhas comuns ou vazadas, como recomenda o NIST SP 800-63B, por exemplo com uma lista local ou com a API k-anonymity do Have I Been Pwned. Evitar regras de composição ("1 maiúscula, 1 símbolo").
-
-### DT-09: Sem Content Security Policy
-
-- **Evidência:** o nginx (`frontend/nginx/`) envia `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`, mas nenhuma `Content-Security-Policy`. As páginas pré-renderizadas do SvelteKit têm um script inline de inicialização, e o `src/app.html` tem outro, que aplica o tema salvo antes da primeira pintura. Por isso, uma CSP simples (`script-src 'self'`) quebraria o site.
-- **Proposta:** ativar a CSP do próprio SvelteKit no modo `hash`, que calcula o hash dos scripts inline no build e o inclui na política. Conferir se o script de tema do `app.html` também é coberto; se não for, incluir o hash dele manualmente. Começar com `default-src 'self'`, mais `img-src 'self' blob: data:` para os previews de foto. Validar com testes de ponta a ponta e, antes de aplicar, publicar em modo `Content-Security-Policy-Report-Only`.
-
+- **Evidência:** o token da sessão é um JWT sem estado, válido por uma semana. O logout só apaga o cookie do navegador, então um token copiado antes continua válido até expirar. Não há como encerrar a sessão de um dispositivo específico.
+- **Proposta:**
+  - guardar no usuário uma versão de sessão (`session_version`), incluída no token e conferida no `GET /users/me` e nas rotas protegidas;
+  - incrementá-la na troca de senha e em "sair de todos os dispositivos".
+  - Hoje, o único jeito de invalidar tudo é trocar a `SECRET_KEY` (ADR-0006).
