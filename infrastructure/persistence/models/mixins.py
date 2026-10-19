@@ -21,10 +21,9 @@ class SQLLifeCycleMixin:
         server_default=func.now(),
         index=True,
     )
-    updated_at: Mapped[pendulum.DateTime] = mapped_column(
+    updated_at: Mapped[pendulum.DateTime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         onupdate=pendulum.now,
-        server_default=func.now(),
         index=True,
     )
