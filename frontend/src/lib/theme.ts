@@ -1,8 +1,8 @@
 /**
  * Tema da interface. Sem escolha salva, segue o sistema
  * (`prefers-color-scheme`); a escolha manual fica no `localStorage` e é
- * aplicada como `data-theme` no `<html>`. O script inline em `src/app.html`
- * repete a leitura inicial para evitar piscar o tema errado.
+ * aplicada como `data-theme` no `<html>`. O `static/theme-init.js`, carregado
+ * no `<head>`, repete a leitura inicial para evitar piscar o tema errado.
  */
 
 export type Theme = 'light' | 'dark';

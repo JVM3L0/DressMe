@@ -67,6 +67,24 @@ describe('password', () => {
 		expect(validateField('password', 'é'.repeat(37))).toBe(MESSAGES.password.too_long);
 	});
 
+	it.each([
+		['Joao.Silva-2026', { username: 'joao.silva' }],
+		['meu-JOAO-favorito', { username: 'Joao' }],
+		['mariana@casa!', { email: 'Mariana@example.com' }]
+	])('recusa %j por conter username ou e-mail', (value, values) => {
+		expect(validateField('password', value, values)).toBe(MESSAGES.password.personal);
+	});
+
+	it('ignora trechos pessoais curtos, como o backend', () => {
+		expect(validateField('password', 'banana-split-azul', { username: 'ana' })).toBeUndefined();
+	});
+
+	it('aplica a regra de dados pessoais no formulário inteiro', () => {
+		expect(validateSignup({ ...VALID, password: 'Joao.Silva_1!' })).toEqual({
+			password: MESSAGES.password.personal
+		});
+	});
+
 	it('não remove espaços da senha', () => {
 		expect(validateField('password', '        ')).toBeUndefined();
 	});

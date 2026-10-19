@@ -3,6 +3,8 @@ import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+import { CSP_DIRECTIVES } from './csp.config.ts';
+
 export default defineConfig({
 	plugins: [
 		sveltekit({
@@ -13,7 +15,9 @@ export default defineConfig({
 			},
 			// Páginas pré-renderizadas; rotas não pré-renderizadas caem no fallback
 			// (SPA). O nginx serve o resultado como arquivos estáticos (ADR-0004).
-			adapter: adapter({ fallback: '200.html' })
+			adapter: adapter({ fallback: '200.html' }),
+			// CSP em <meta>, com os hashes dos scripts inline do SvelteKit (csp.config.ts)
+			csp: { mode: 'hash', directives: CSP_DIRECTIVES }
 		})
 	],
 	server: {

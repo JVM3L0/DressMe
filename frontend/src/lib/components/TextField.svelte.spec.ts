@@ -33,9 +33,10 @@ describe('TextField', () => {
 
 		await expect.element(input).toHaveAttribute('aria-invalid', 'true');
 		await expect.element(input).toHaveAccessibleDescription('Use pelo menos 8 caracteres.');
+		// A dica continua ocupando o espaço (o layout não pula), mas oculta
 		await expect
 			.element(screen.getByText('Pelo menos 8 caracteres.', { exact: true }))
-			.not.toBeInTheDocument();
+			.not.toBeVisible();
 	});
 
 	it('repassa atributos nativos ao input', async () => {

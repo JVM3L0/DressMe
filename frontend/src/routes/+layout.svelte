@@ -1,16 +1,24 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
 	import '@fontsource-variable/bodoni-moda';
 	import '@fontsource-variable/figtree';
 	import '../app.css';
 
 	import favicon from '#lib/assets/favicon.svg';
+	import AccountLink from '#lib/components/AccountLink.svelte';
 	import ApiStatus from '#lib/components/ApiStatus.svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
+	import { loadSession } from '#lib/session.svelte.ts';
 
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	// Uma vez por visita: as páginas são estáticas e a sessão só existe no navegador
+	onMount(() => {
+		loadSession();
+	});
 </script>
 
 <svelte:head>
@@ -25,7 +33,10 @@
 
 <header class="site-header">
 	<a class="wordmark" href={resolve('/')}>VirtualFit</a>
-	<ThemeToggle />
+	<nav class="actions" aria-label="Conta e preferências">
+		<AccountLink />
+		<ThemeToggle />
+	</nav>
 </header>
 
 <main id="conteudo" class="page">
@@ -61,6 +72,12 @@
 		justify-content: space-between;
 		gap: var(--space-4);
 		padding-block: var(--space-4);
+	}
+
+	.actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
 	}
 
 	.wordmark {

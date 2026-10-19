@@ -33,6 +33,30 @@
         "title": "HealthcheckResponse",
         "type": "object"
       },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "examples": [
+              "joao@example.com"
+            ],
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
       "UserCreate": {
         "properties": {
           "email": {
@@ -45,7 +69,7 @@
             "type": "string"
           },
           "password": {
-            "description": "Mínimo de 8 caracteres e máximo de 72 bytes.",
+            "description": "Mínimo de 8 caracteres e máximo de 72 bytes. Senhas comuns e senhas que contêm o username ou o e-mail são recusadas.",
             "minLength": 8,
             "title": "Password",
             "type": "string"
@@ -140,14 +164,85 @@
         "title": "ValidationError",
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "APIKeyCookie": {
+        "description": "Sessão criada pelo login.",
+        "in": "cookie",
+        "name": "virtualfit_session",
+        "type": "apiKey"
+      }
     }
   },
   "info": {
     "title": "VirtualFit API",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "openapi": "3.1.0",
   "paths": {
+    "/auth/login": {
+      "post": {
+        "description": "Inicia a sessão num cookie `HttpOnly`: o JavaScript da página não lê o\ntoken, então um XSS não consegue roubá-lo. `SameSite=Strict` impede que\noutros sites enviem requisições com a sessão (CSRF).",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "E-mail ou senha incorretos."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Limite de tentativas por IP atingido."
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "description": "Encerra a sessão neste navegador. O token é stateless e continua\nválido até expirar (sem lista de revogação na PoC, ADR-0006).",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/healthcheck/": {
       "get": {
         "operationId": "healthcheck_healthcheck__get",
@@ -211,6 +306,35 @@
           }
         },
         "summary": "Create User",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "read_current_user_users_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Read Current User",
         "tags": [
           "users"
         ]

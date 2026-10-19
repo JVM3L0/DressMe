@@ -46,10 +46,18 @@
 		/>
 		{@render trailing?.()}
 	</div>
-	{#if error}
-		<p id={errorId} class="error">{error}</p>
-	{:else if hint}
-		<p id={hintId} class="hint">{hint}</p>
+	{#if hint || error}
+		<!-- Dica e erro ocupam a mesma célula: quando o erro substitui a dica, a
+		     altura não muda e o botão abaixo não sai do lugar no meio do clique
+		     (validar ao sair do campo acontece no mousedown do botão) -->
+		<div class="messages">
+			{#if hint}
+				<p id={hintId} class="hint" class:replaced={error}>{hint}</p>
+			{/if}
+			{#if error}
+				<p id={errorId} class="error">{error}</p>
+			{/if}
+		</div>
 	{/if}
 </div>
 
@@ -87,6 +95,19 @@
 	.has-error input {
 		border-color: var(--field-danger, var(--color-danger));
 		border-width: 2px;
+	}
+
+	.messages {
+		display: grid;
+	}
+
+	.messages > * {
+		grid-area: 1 / 1;
+	}
+
+	/* Fora da árvore de acessibilidade, mas reservando o espaço */
+	.replaced {
+		visibility: hidden;
 	}
 
 	.hint {

@@ -127,6 +127,23 @@ body {
 	text-rendering: optimizeLegibility;
 }
 
+/* Região de anúncios do SvelteKit para leitores de tela: oculta mesmo se a CSP
+   bloquear o estilo inline dela (ver csp.config.ts) */
+#svelte-announcer {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* Contêiner do src/app.html: sem efeito no layout (no lugar de um atributo
+   style, que a CSP bloquearia) */
+.app-root {
+	display: contents;
+}
+
 h1,
 h2,
 h3 {

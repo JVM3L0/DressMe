@@ -21,3 +21,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Artefatos de testes que falharam no Vitest (capturas de tela)
+.vitest-attachments
+__screenshots__

@@ -1,5 +1,5 @@
 import {
-	MESSAGES,
+	messageFor,
 	type Problem,
 	type SignupErrors,
 	type SignupField
@@ -18,7 +18,9 @@ const PROBLEM_BY_TYPE: Record<string, Problem> = {
 	string_too_long: 'too_long',
 	string_pattern_mismatch: 'invalid',
 	value_error: 'invalid',
-	string_type: 'invalid'
+	string_type: 'invalid',
+	password_common: 'common',
+	password_personal: 'personal'
 };
 
 const FIELDS: readonly SignupField[] = ['username', 'email', 'password'];
@@ -41,7 +43,7 @@ export function signupErrorsFromApi(issues: ValidationIssue[]): SignupErrors {
 			field === 'password' && issue.msg.includes('72 bytes')
 				? 'too_long'
 				: (PROBLEM_BY_TYPE[issue.type] ?? 'invalid');
-		errors[field] = MESSAGES[field][problem];
+		errors[field] = messageFor(field, problem);
 	}
 	return errors;
 }
