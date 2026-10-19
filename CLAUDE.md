@@ -64,3 +64,5 @@ Config is Dynaconf only (don't add python-dotenv): `.env` + env vars override `s
 CI (`.github/workflows/ci.yml`): ruff, pytest with a Postgres service, `pip-audit` on prod deps (with documented `--ignore-vuln` entries tied to `docs/debito-tecnico.md`), and `docker build`. Actions are pinned by commit SHA.
 
 Known tech debt lives in `docs/debito-tecnico.md`; update it when resolving or discovering items.
+
+Architecture/scope decisions are ADRs in `docs/adr/` (accepted ADRs are never edited; supersede with a new one). The project is a **proof of concept of VirtualFit** (virtual clothing try-on) without AI (ADR-0001): manual try-on in the browser, a planned monorepo with a SvelteKit frontend (ADR-0002), and images on local disk served by nginx via `X-Accel-Redirect`, never public (ADR-0003). Check new work against these ADRs.

@@ -180,7 +180,7 @@ O projeto é dividido em camadas, e as dependências sempre apontam para dentro 
 │   ├── repositories/  # Implementações dos repositórios
 │   └── web/           # Rotas, schemas, dependências (DI) e handlers de erro
 ├── config/            # Configurações (Dynaconf)
-├── docs/              # Documentação do projeto (ex.: débito técnico)
+├── docs/              # Documentação: decisões (adr/), deploy e débito técnico
 ├── scripts/           # Entrypoint do container
 ├── tests/             # unit/ e integration/
 └── main.py            # Criação da aplicação FastAPI
@@ -204,6 +204,10 @@ O projeto é dividido em camadas, e as dependências sempre apontam para dentro 
 Veja o checklist em [docs/deploy.md](docs/deploy.md): variáveis obrigatórias, geração da `SECRET_KEY`, `FORWARDED_ALLOW_IPS` atrás de proxy e quando usar Redis no rate limiting.
 
 Pendências conhecidas estão em [docs/debito-tecnico.md](docs/debito-tecnico.md).
+
+## Decisões
+
+Decisões de arquitetura e escopo estão registradas em [docs/adr/](docs/adr/README.md), incluindo o escopo atual da prova de conceito (sem IA).
 
 ## CI
 
