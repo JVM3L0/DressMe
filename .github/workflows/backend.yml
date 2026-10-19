@@ -1,17 +1,32 @@
-name: CI
+name: Backend
 
 on:
   pull_request:
     branches: [develop, staging, main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+      - ".pre-commit-config.yaml"
+      - "docker-compose.yml"
   push:
     branches: [develop, staging, main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+      - ".pre-commit-config.yaml"
+      - "docker-compose.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Por workflow, para o do frontend não cancelar este
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
 
 jobs:
   lint:
@@ -22,6 +37,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - run: uv sync --locked --only-group dev
       - run: uv run --no-sync ruff check --output-format=github .
       - run: uv run --no-sync ruff format --check .
@@ -62,6 +78,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - run: uv sync --locked
       - run: uv run --no-sync pytest -ra
 

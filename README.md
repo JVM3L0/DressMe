@@ -1,6 +1,14 @@
 # DressMe
 
-API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo uma arquitetura em camadas (Clean Architecture / Hexagonal).
+Prova de conceito do **VirtualFit**, uma plataforma de prova virtual de roupas (escopo em [ADR-0001](docs/adr/0001-escopo-prova-de-conceito.md)). Monorepo com:
+
+| Pasta | Conteúdo |
+| --- | --- |
+| [`backend/`](backend/) | API em **FastAPI** e **PostgreSQL**, com arquitetura em camadas (Clean Architecture / Hexagonal) |
+| `frontend/` | SvelteKit (em breve, [ADR-0002](docs/adr/0002-monorepo-e-sveltekit.md)) |
+| [`docs/`](docs/) | Decisões (ADRs), deploy e débito técnico |
+
+Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pelo backend), o CI e o pre-commit. **Os comandos `uv` deste README rodam dentro de `backend/`.**
 
 ## Sumário
 
@@ -41,12 +49,12 @@ API backend do DressMe, construída com **FastAPI** e **PostgreSQL**, seguindo u
 
    ```bash
    git clone git@github.com:JVM3L0/DressMe.git
-   cd DressMe
+   cd DressMe/backend
    uv sync                     # inclui as ferramentas de dev e testes
-   uv run pre-commit install   # roda o Ruff antes de cada commit
+   uv run pre-commit install   # roda o Ruff antes de cada commit (vale para o repositório todo)
    ```
 
-2. Crie o `.env` a partir do exemplo e troque a senha (o `.env` é ignorado pelo Git):
+2. Na **raiz** do repositório, crie o `.env` a partir do exemplo e troque a senha (o `.env` é ignorado pelo Git):
 
    ```bash
    cp .env.example .env
@@ -82,7 +90,8 @@ A configuração usa o [Dynaconf](https://www.dynaconf.com/): valores por ambien
 Suba apenas o banco com Docker e rode a API localmente com hot reload:
 
 ```bash
-docker compose up -d db
+docker compose up -d db      # na raiz
+cd backend
 uv run alembic upgrade head
 uv run fastapi dev main.py
 ```
@@ -168,10 +177,10 @@ curl -X POST http://localhost:8000/users/ \
 
 ## Arquitetura
 
-O projeto é dividido em camadas, e as dependências sempre apontam para dentro (`infrastructure` → `application` → `domain`):
+O backend é dividido em camadas, e as dependências sempre apontam para dentro (`infrastructure` → `application` → `domain`):
 
 ```
-.
+backend/
 ├── domain/            # Núcleo de negócio: entidades (Pydantic) e ports (Protocols)
 ├── application/       # Casos de uso e interfaces de repositório
 ├── infrastructure/    # Adaptadores concretos
@@ -179,11 +188,12 @@ O projeto é dividido em camadas, e as dependências sempre apontam para dentro 
 │   ├── persistence/   # Models SQLAlchemy, sessão do banco e Alembic
 │   ├── repositories/  # Implementações dos repositórios
 │   └── web/           # Rotas, schemas, dependências (DI) e handlers de erro
-├── config/            # Configurações (Dynaconf)
-├── docs/              # Documentação: decisões (adr/), deploy e débito técnico
+├── config/            # Configurações (Dynaconf) + settings.toml
 ├── scripts/           # Entrypoint do container
 ├── tests/             # unit/ e integration/
-└── main.py            # Criação da aplicação FastAPI
+├── main.py            # Criação da aplicação FastAPI
+├── pyproject.toml     # Dependências, Ruff e pytest
+└── Dockerfile
 ```
 
 - **Entidades de domínio**, **models ORM** e **schemas web** são classes separadas; os repositórios fazem o mapeamento entre domínio e ORM.
@@ -211,7 +221,7 @@ Decisões de arquitetura e escopo estão registradas em [docs/adr/](docs/adr/REA
 
 ## CI
 
-O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda em PRs e pushes para `develop`, `staging` e `main`:
+O workflow [`.github/workflows/backend.yml`](.github/workflows/backend.yml) roda em PRs e pushes para `develop`, `staging` e `main` **quando há mudanças em `backend/`** (ou no próprio workflow, no compose e no pre-commit):
 
 - **Lint e formatação:** `ruff check` e `ruff format --check`;
 - **Testes:** suíte completa com um Postgres de serviço (os testes de integração não são pulados);
@@ -221,6 +231,6 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda em PRs e 
 ## Contribuindo
 
 1. Abra uma issue usando o template **🚀 Nova Task** (`.github/ISSUE_TEMPLATE/feature_request.md`).
-2. Crie uma branch a partir da `main`.
+2. Crie uma branch a partir da `develop`, no formato `<tipo>/<N.M>-<descrição>`: `N` é o número do último PR/issue no GitHub e `M` é a sequência (ex.: `chore/6.1-monorepo`).
 3. Use mensagens de commit no padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br/) (`feat:`, `fix:`, `chore:` ...).
-4. Garanta que `uv run ruff check .`, `uv run ruff format --check .` e `uv run pytest` passam, e abra um Pull Request.
+4. Garanta que `uv run ruff check .`, `uv run ruff format --check .` e `uv run pytest` passam (em `backend/`), e abra um Pull Request para a `develop`.

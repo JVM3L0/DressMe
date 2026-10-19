@@ -1,6 +1,6 @@
 # Deploy
 
-Checklist para colocar a API em produção. A imagem é gerada pelo `Dockerfile`. Ao iniciar, o container executa `alembic upgrade head` e sobe o uvicorn na porta `PORT` (padrão `8000`).
+Checklist para colocar a API em produção. A imagem é gerada pelo `backend/Dockerfile` (contexto de build: `backend/`). Ao iniciar, o container executa `alembic upgrade head` e sobe o uvicorn na porta `PORT` (padrão `8000`).
 
 ## Variáveis de ambiente
 
@@ -25,7 +25,7 @@ Assina os tokens JWT. Se vazar, qualquer pessoa pode gerar tokens válidos.
   python -c "import secrets; print(secrets.token_urlsafe(48))"
   ```
 - Tamanho mínimo: 32 bytes para `HS256` (48 para `HS384` e 64 para `HS512`). O comando acima gera 64 caracteres.
-- Use uma chave diferente por ambiente (staging e produção). Nunca use a do `settings.toml` (ambiente de testes) nem a do `.env` local.
+- Use uma chave diferente por ambiente (staging e produção). Nunca use a do `backend/settings.toml` (ambiente de testes) nem a do `.env` local.
 - Trocar a chave invalida todos os tokens emitidos.
 
 ### `FORWARDED_ALLOW_IPS`
@@ -40,14 +40,14 @@ Como validar depois do deploy: faça 6 cadastros seguidos de uma mesma máquina.
 
 ## Rate limiting e instâncias
 
-Com **uma instância** e um processo do uvicorn (configuração atual do `scripts/entrypoint.sh`), o contador em memória (`memory://`, padrão) é suficiente. Ele é zerado quando o container reinicia.
+Com **uma instância** e um processo do uvicorn (configuração atual do `backend/scripts/entrypoint.sh`), o contador em memória (`memory://`, padrão) é suficiente. Ele é zerado quando o container reinicia.
 
 Com **mais de uma instância**, ou com `--workers` maior que 1, cada processo teria o próprio contador, e o limite efetivo seria multiplicado. Nesse caso:
 
 1. Provisione um Redis acessível pela API, na mesma rede privada.
 2. Defina `RATE_LIMIT_STORAGE_URI=redis://usuario:senha@host:6379/0` (ou `rediss://` com TLS).
 
-O suporte já está instalado (`limits[redis]`), e o teste `tests/integration/test_rate_limit_redis.py` valida o limite compartilhado no CI.
+O suporte já está instalado (`limits[redis]`), e o teste `backend/tests/integration/test_rate_limit_redis.py` valida o limite compartilhado no CI.
 
 ## Primeiro deploy
 
