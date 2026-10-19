@@ -8,6 +8,8 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
 
 - Frontend em SvelteKit (`frontend/`), mobile-first, com identidade visual própria: paleta Gruvbox, títulos em Bodoni Moda e a etiqueta de roupa como elemento de destaque.
 - Página inicial explicando o fluxo do produto e página de cadastro, com validação no navegador, mensagens de erro em português, foco no primeiro erro e opção de mostrar a senha.
+- Botão para alternar entre os temas claro e escuro. O padrão segue o sistema, a escolha fica salva no navegador e é aplicada antes da primeira pintura, sem piscar.
+- Link para o código no GitHub no rodapé.
 - Cliente HTTP tipado (`openapi-fetch`), com os tipos gerados a partir do OpenAPI do backend (`npm run api:sync`).
 - A API informa a própria versão no OpenAPI (`/docs`) e no `GET /healthcheck/`.
 - Workflow de CI do frontend: lint, checagem de tipos, build, testes (unidade e componentes no Chromium), auditoria, verificação do contrato da API e build da imagem.

@@ -28,6 +28,6 @@ Resolvidos: DT-01 (dependências atualizadas), DT-02 (PyJWT e `SECRET_KEY`), DT-
 
 ### DT-09: Sem Content Security Policy
 
-- **Evidência:** o nginx (`frontend/nginx/`) envia `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`, mas nenhuma `Content-Security-Policy`. As páginas pré-renderizadas do SvelteKit têm um script inline de inicialização, então uma CSP simples (`script-src 'self'`) quebraria o site.
-- **Proposta:** ativar a CSP do próprio SvelteKit no modo `hash`, que calcula o hash dos scripts inline no build e o inclui na política. Começar com `default-src 'self'`, mais `img-src 'self' blob: data:` para os previews de foto. Validar com testes de ponta a ponta e, antes de aplicar, publicar em modo `Content-Security-Policy-Report-Only`.
+- **Evidência:** o nginx (`frontend/nginx/`) envia `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`, mas nenhuma `Content-Security-Policy`. As páginas pré-renderizadas do SvelteKit têm um script inline de inicialização, e o `src/app.html` tem outro, que aplica o tema salvo antes da primeira pintura. Por isso, uma CSP simples (`script-src 'self'`) quebraria o site.
+- **Proposta:** ativar a CSP do próprio SvelteKit no modo `hash`, que calcula o hash dos scripts inline no build e o inclui na política. Conferir se o script de tema do `app.html` também é coberto; se não for, incluir o hash dele manualmente. Começar com `default-src 'self'`, mais `img-src 'self' blob: data:` para os previews de foto. Validar com testes de ponta a ponta e, antes de aplicar, publicar em modo `Content-Security-Policy-Report-Only`.
 
