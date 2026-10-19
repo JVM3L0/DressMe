@@ -1,3 +1,6 @@
+import os
+
+import pytest
 from sqlalchemy import URL, make_url, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -31,3 +34,12 @@ async def create_database_if_missing(url: URL) -> None:
                 await conn.execute(text(f'CREATE DATABASE "{url.database}"'))
     finally:
         await admin_engine.dispose()
+
+
+def database_unavailable(exc: Exception) -> None:
+    """Pula os testes sem banco localmente, mas falha no CI para que eles não
+    deixem de rodar sem ninguém perceber."""
+    message = f"Postgres de teste indisponível: {exc}"
+    if os.environ.get("CI"):
+        pytest.fail(message)
+    pytest.skip(message)

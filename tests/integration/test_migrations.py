@@ -8,7 +8,11 @@ from sqlalchemy import make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from tests.integration.database import TEST_DATABASE_URL, create_database_if_missing
+from tests.integration.database import (
+    TEST_DATABASE_URL,
+    create_database_if_missing,
+    database_unavailable,
+)
 
 pytestmark = [pytest.mark.anyio, pytest.mark.integration]
 
@@ -29,7 +33,7 @@ async def engine():
     try:
         await create_database_if_missing(MIGRATIONS_URL)
     except (OSError, SQLAlchemyError) as exc:
-        pytest.skip(f"Postgres de teste indisponível: {exc}")
+        database_unavailable(exc)
 
     engine = create_async_engine(MIGRATIONS_URL)
     await alembic("downgrade", "base")

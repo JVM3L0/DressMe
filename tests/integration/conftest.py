@@ -9,6 +9,7 @@ from infrastructure.persistence.models import Base
 from tests.integration.database import (
     TEST_DATABASE_URL,
     create_database_if_missing,
+    database_unavailable,
 )
 
 
@@ -18,7 +19,7 @@ async def engine() -> AsyncIterator[AsyncEngine]:
     try:
         await create_database_if_missing(url)
     except (OSError, SQLAlchemyError) as exc:
-        pytest.skip(f"Postgres de teste indisponível: {exc}")
+        database_unavailable(exc)
 
     engine = create_async_engine(url, hide_parameters=True)
     async with engine.begin() as conn:
