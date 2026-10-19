@@ -10,6 +10,7 @@ Resolvidos: DT-01 (dependências atualizadas), DT-02 (PyJWT e `SECRET_KEY`), DT-
 | --- | --- | --- | --- |
 | [DT-06](#dt-06-enumeração-de-contas-no-cadastro) | 🟡 | Produto / Segurança | Enumeração de contas no cadastro |
 | [DT-07](#dt-07-política-de-senha-mínima) | 🟢 | Segurança | Política de senha mínima |
+| [DT-09](#dt-09-sem-content-security-policy) | 🟡 | Segurança | Sem Content Security Policy |
 
 ---
 
@@ -24,3 +25,9 @@ Resolvidos: DT-01 (dependências atualizadas), DT-02 (PyJWT e `SECRET_KEY`), DT-
 
 - **Evidência:** a única regra é ter de 8 caracteres a 72 bytes. Senhas como `12345678` são aceitas.
 - **Proposta:** recusar senhas comuns ou vazadas, como recomenda o NIST SP 800-63B, por exemplo com uma lista local ou com a API k-anonymity do Have I Been Pwned. Evitar regras de composição ("1 maiúscula, 1 símbolo").
+
+### DT-09: Sem Content Security Policy
+
+- **Evidência:** o nginx (`frontend/nginx/`) envia `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`, mas nenhuma `Content-Security-Policy`. As páginas pré-renderizadas do SvelteKit têm um script inline de inicialização, então uma CSP simples (`script-src 'self'`) quebraria o site.
+- **Proposta:** ativar a CSP do próprio SvelteKit no modo `hash`, que calcula o hash dos scripts inline no build e o inclui na política. Começar com `default-src 'self'`, mais `img-src 'self' blob: data:` para os previews de foto. Validar com testes de ponta a ponta e, antes de aplicar, publicar em modo `Content-Security-Policy-Report-Only`.
+

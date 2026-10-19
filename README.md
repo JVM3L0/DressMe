@@ -92,6 +92,7 @@ Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pel
 | `RATE_LIMIT_STORAGE_URI` | Não | `memory://` | Armazenamento dos contadores (`redis://...` com várias instâncias) |
 | `FORWARDED_ALLOW_IPS` | Deploy | `127.0.0.1` | IPs de proxy confiáveis para o uvicorn (IP real do cliente) |
 | `TEST_REDIS_URL` | Não | — | Redis para o teste de rate limiting compartilhado (pulado sem ele) |
+| `WEB_PORT` | Não | `8080` | Porta local do nginx no `docker compose` |
 
 A configuração usa o [Dynaconf](https://www.dynaconf.com/): valores por ambiente ficam em `settings.toml` e são sobrescritos pelo `.env` e pelas variáveis de ambiente. `DATABASE_URL` é validada na importação da aplicação: sem ela, a API e o Alembic não sobem.
 
@@ -117,13 +118,23 @@ npm run dev
 
 Abra <http://localhost:5173>. O frontend chama a API em `/api`, e o Vite repassa para `http://localhost:8000` (para outro endereço, use `API_PROXY_TARGET`). O rodapé mostra "API x.y.z conectada" quando a integração está funcionando.
 
-### Tudo via Docker
+### Ambiente completo via Docker (igual a produção)
 
 ```bash
-docker compose up --build
+docker compose up --build    # na raiz
 ```
 
-O container da aplicação aguarda o Postgres ficar saudável (healthcheck), executa `alembic upgrade head` e inicia o servidor na porta `8000`. As portas do banco e da API ficam acessíveis apenas pela própria máquina (`127.0.0.1`). Por enquanto, o frontend roda fora do Docker, com `npm run dev`. Ele vai para o compose junto com o nginx ([ADR-0003](docs/adr/0003-armazenamento-local-de-imagens-com-nginx.md)).
+Abra <http://localhost:8080> (para mudar a porta, use `WEB_PORT`). A documentação da API fica em <http://localhost:8080/api/docs>.
+
+| Serviço | Imagem | Papel |
+| --- | --- | --- |
+| `web` | `frontend/Dockerfile`: build do SvelteKit + `nginx:1.30-alpine` | Entrada única: serve o site estático em `/` e repassa `/api/*` para a API |
+| `app` | `backend/Dockerfile` | API FastAPI. Roda as migrações ao iniciar, e só é acessível pelo nginx |
+| `db` | `postgres:16-alpine` | Banco, publicado em `127.0.0.1:5432` para o desenvolvimento local |
+
+A ordem de subida respeita os healthchecks: `db` → `app` → `web`. O nginx também define os cabeçalhos de segurança, o cache dos arquivos estáticos e o IP real do cliente para o rate limiting. A configuração fica em `frontend/nginx/`.
+
+Use esse modo para validar o sistema completo antes de abrir um PR. Para desenvolver, os servidores locais com recarga automática (acima) são mais rápidos. Se for alternar, rode `docker compose stop app web` antes de iniciar a API local, para liberar o banco só para ela.
 
 ## Frontend
 

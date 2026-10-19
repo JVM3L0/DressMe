@@ -10,11 +10,13 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
 - Página inicial explicando o fluxo do produto e página de cadastro, com validação no navegador, mensagens de erro em português, foco no primeiro erro e opção de mostrar a senha.
 - Cliente HTTP tipado (`openapi-fetch`), com os tipos gerados a partir do OpenAPI do backend (`npm run api:sync`).
 - A API informa a própria versão no OpenAPI (`/docs`) e no `GET /healthcheck/`.
-- Workflow de CI do frontend: lint, checagem de tipos, build, testes (unidade e componentes no Chromium), auditoria e verificação do contrato da API.
+- Workflow de CI do frontend: lint, checagem de tipos, build, testes (unidade e componentes no Chromium), auditoria, verificação do contrato da API e build da imagem.
+- Serviço `web` no `docker compose`, com o nginx servindo o frontend e repassando `/api` para a API. É a entrada única em <http://localhost:8080>, com cabeçalhos de segurança, cache de arquivos estáticos e gzip.
 
 ### Alterado
 
 - A versão do produto passa a ser única para o monorepo (`backend/pyproject.toml` e `frontend/package.json`).
+- No compose, a API deixa de ser publicada no host e ganha um healthcheck. Ela confia no `X-Forwarded-For` definido pelo nginx, então o rate limiting usa o IP real do cliente e não aceita IP forjado. A documentação fica em `/api/docs`.
 
 ## [0.1.0] - 2026-10-19
 
