@@ -1,4 +1,3 @@
-from markdown_it.presets import default
 from dynaconf import Dynaconf, Validator
 
 

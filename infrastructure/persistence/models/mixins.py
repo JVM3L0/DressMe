@@ -1,7 +1,8 @@
+import uuid
+
+import pendulum
 from sqlalchemy import UUID, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
-import uuid
-import pendulum
 
 
 class SQLUUIDMixin:
