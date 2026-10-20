@@ -4,7 +4,7 @@ de outra pessoa se comporta como se não existisse."""
 from uuid import UUID
 
 from application.interfaces.photo_repository import PhotoRepository
-from application.services.image_upload import ImageUploader
+from application.services.image_upload import ImageUploader, delete_stored_image
 from domain.entities.photo import Photo
 from domain.exceptions.common import ResourceNotFoundError
 from domain.ports.image_storage import ImageStorage
@@ -53,4 +53,4 @@ class DeletePhotoUseCase:
         # Primeiro o registro: se o arquivo não puder ser apagado, sobra um
         # arquivo órfão (inofensivo), e não um registro apontando para o nada
         await self.repository.delete(photo)
-        await self.storage.delete(photo.image.key)
+        await delete_stored_image(self.storage, photo.image)

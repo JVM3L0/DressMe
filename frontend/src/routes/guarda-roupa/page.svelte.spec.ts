@@ -53,7 +53,7 @@ describe('guarda-roupa: lista', () => {
 		await render(Page);
 
 		const image = page.getByAltText('Camisa azul');
-		await expect.element(image).toHaveAttribute('src', `/api/garments/${SHIRT.uid}/image`);
+		await expect.element(image).toHaveAttribute('src', `/api/garments/${SHIRT.uid}/thumbnail`);
 		await expect.element(page.getByText('Parte de cima', { exact: true }).last()).toBeVisible();
 		await expect.element(page.getByAltText('Calçado')).toBeVisible();
 	});

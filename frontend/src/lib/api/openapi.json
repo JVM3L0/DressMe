@@ -311,7 +311,7 @@
   },
   "info": {
     "title": "VirtualFit API",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -595,6 +595,58 @@
         ]
       }
     },
+    "/garments/{uid}/thumbnail": {
+      "get": {
+        "description": "Miniatura (até 480 px), para as grades, só para o dono",
+        "operationId": "get_garment_thumbnail_garments__uid__thumbnail_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {},
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Garment Thumbnail",
+        "tags": [
+          "garments"
+        ]
+      }
+    },
     "/healthcheck/": {
       "get": {
         "operationId": "healthcheck_healthcheck__get",
@@ -800,6 +852,58 @@
           }
         ],
         "summary": "Get Photo Image",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos/{uid}/thumbnail": {
+      "get": {
+        "description": "Miniatura (até 480 px), para as grades, só para o dono",
+        "operationId": "get_photo_thumbnail_photos__uid__thumbnail_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {},
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Photo Thumbnail",
         "tags": [
           "photos"
         ]

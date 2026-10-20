@@ -14,6 +14,9 @@ export interface NewGarment {
 
 export const garmentImageUrl = (uid: string) => `/api/garments/${uid}/image`;
 
+/** Miniatura (até 480 px) para as grades; a imagem inteira é para o provador */
+export const garmentThumbnailUrl = (uid: string) => `/api/garments/${uid}/thumbnail`;
+
 export const listGarments = (): Promise<Result<Garment[]>> => request(() => api.GET('/garments/'));
 
 export function addGarment({ file, category, name }: NewGarment): Promise<Result<Garment>> {

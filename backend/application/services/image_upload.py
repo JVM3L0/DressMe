@@ -7,6 +7,12 @@ from domain.ports.image_processor import ImageProcessor
 from domain.ports.image_storage import ImageStorage
 
 
+async def delete_stored_image(storage: ImageStorage, image: StoredImage) -> None:
+    """Remove a imagem e a miniatura. Não falha se um deles já não existir."""
+    await storage.delete(image.key)
+    await storage.delete(image.thumbnail_key)
+
+
 class ImageUploader:
     """Fluxo comum aos uploads de fotos e de peças: valida, regrava sem
     metadados e guarda com um nome gerado (ADR-0003)."""
@@ -22,7 +28,7 @@ class ImageUploader:
         persist: Callable[[StoredImage], Awaitable[T]],
     ) -> T:
         """Guarda a imagem e chama `persist` para gravar o registro. Se o
-        registro falhar, o arquivo é removido, para não sobrar imagem órfã."""
+        registro falhar, os arquivos são removidos, para não sobrar imagem órfã."""
         if len(data) > MAX_IMAGE_BYTES:
             raise ImageTooLargeError()
 
@@ -33,9 +39,17 @@ class ImageUploader:
             width=processed.width,
             height=processed.height,
         )
-        await self.storage.save(image.key, processed.data)
+        await self._save(image, processed.data, processed.thumbnail)
         try:
             return await persist(image)
+        except BaseException:
+            await delete_stored_image(self.storage, image)
+            raise
+
+    async def _save(self, image: StoredImage, data: bytes, thumbnail: bytes) -> None:
+        await self.storage.save(image.key, data)
+        try:
+            await self.storage.save(image.thumbnail_key, thumbnail)
         except BaseException:
             await self.storage.delete(image.key)
             raise

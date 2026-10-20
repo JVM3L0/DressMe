@@ -4,7 +4,7 @@ outra pessoa se comporta como se não existisse."""
 from uuid import UUID
 
 from application.interfaces.garment_repository import GarmentRepository
-from application.services.image_upload import ImageUploader
+from application.services.image_upload import ImageUploader, delete_stored_image
 from domain.entities.garment import Garment
 from domain.enums.garment_category import GarmentCategory
 from domain.exceptions.common import ResourceNotFoundError
@@ -66,4 +66,4 @@ class DeleteGarmentUseCase:
         garment = await GetGarmentUseCase(self.repository).execute(uid, owner_id)
         # Primeiro o registro (ver DeletePhotoUseCase)
         await self.repository.delete(garment)
-        await self.storage.delete(garment.image.key)
+        await delete_stored_image(self.storage, garment.image)

@@ -22,7 +22,7 @@
 	import {
 		addGarment,
 		deleteGarment,
-		garmentImageUrl,
+		garmentThumbnailUrl,
 		listGarments,
 		type Garment
 	} from '#lib/wardrobe/garments.ts';
@@ -188,7 +188,7 @@
 						{@const label = categoryLabel(garment.category)}
 						<li>
 							<MediaCard
-								src={garmentImageUrl(garment.uid)}
+								src={garmentThumbnailUrl(garment.uid)}
 								width={garment.width}
 								height={garment.height}
 								alt={garment.name ?? label}

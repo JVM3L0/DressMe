@@ -76,6 +76,22 @@ async def get_garment_image(
     return image_response(garment.image, storage)
 
 
+@router.get(
+    "/{uid}/thumbnail",
+    response_class=Response,
+    responses={200: {"content": {"image/jpeg": {}, "image/png": {}}}, **NOT_FOUND},
+)
+async def get_garment_thumbnail(
+    uid: UUID,
+    user: CurrentUserDep,
+    repository: GarmentRepositoryDep,
+    storage: ImageStorageDep,
+) -> Response:
+    """Miniatura (até 480 px), para as grades, só para o dono"""
+    garment = await GetGarmentUseCase(repository).execute(uid, user.uid)
+    return image_response(garment.image, storage, thumbnail=True)
+
+
 @router.delete("/{uid}", status_code=status.HTTP_204_NO_CONTENT, responses=NOT_FOUND)
 async def delete_garment(
     uid: UUID,

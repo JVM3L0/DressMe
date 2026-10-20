@@ -3,6 +3,7 @@ import io
 import pytest
 from PIL import Image
 
+from domain.entities.image import MAX_IMAGE_SIDE, THUMBNAIL_SIDE
 from domain.exceptions.image import InvalidImageError
 from infrastructure.images import pillow_processor
 from infrastructure.images.pillow_processor import PillowImageProcessor
@@ -84,3 +85,36 @@ async def test_rejects_images_with_too_many_pixels(processor, monkeypatch):
 
     with pytest.raises(InvalidImageError):
         await processor.process(jpeg_bytes(40, 20))
+
+
+class TestSizes:
+    async def test_small_image_is_not_enlarged(self, processor):
+        result = await processor.process(jpeg_bytes(40, 20))
+
+        assert (result.width, result.height) == (40, 20)
+        assert open_image(result.thumbnail).size == (40, 20)
+
+    async def test_original_is_reduced_keeping_the_proportion(self, processor):
+        result = await processor.process(jpeg_bytes(MAX_IMAGE_SIDE * 2, MAX_IMAGE_SIDE))
+
+        assert (result.width, result.height) == (MAX_IMAGE_SIDE, MAX_IMAGE_SIDE // 2)
+        assert open_image(result.data).size == (result.width, result.height)
+
+    async def test_thumbnail_fits_in_the_thumbnail_side(self, processor):
+        result = await processor.process(jpeg_bytes(1200, 1800))
+
+        width, height = open_image(result.thumbnail).size
+        assert (width, height) == (THUMBNAIL_SIDE * 2 // 3, THUMBNAIL_SIDE)
+        assert len(result.thumbnail) < len(result.data)
+
+    async def test_thumbnail_has_the_same_format_and_no_metadata(self, processor):
+        jpeg = await processor.process(jpeg_bytes(1000, 600, orientation=6))
+        png = await processor.process(png_bytes(900, 900))
+
+        thumbnail = open_image(jpeg.thumbnail)
+        assert thumbnail.format == "JPEG"
+        assert thumbnail.size == (THUMBNAIL_SIDE * 6 // 10, THUMBNAIL_SIDE)  # girada
+        assert not thumbnail.getexif()
+        assert b"Celular de Teste" not in jpeg.thumbnail
+        assert open_image(png.thumbnail).format == "PNG"
+        assert open_image(png.thumbnail).mode == "RGBA"

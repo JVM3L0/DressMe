@@ -4,7 +4,12 @@ import warnings
 from anyio import to_thread
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from domain.entities.image import ImageContentType, ProcessedImage
+from domain.entities.image import (
+    MAX_IMAGE_SIDE,
+    THUMBNAIL_SIDE,
+    ImageContentType,
+    ProcessedImage,
+)
 from domain.exceptions.image import InvalidImageError
 
 # Uma foto de celular tem de 12 a 50 megapixels. Acima disso, o arquivo
@@ -55,9 +60,26 @@ class PillowImageProcessor:
 
 def _encode(image: Image.Image, content_type: ImageContentType) -> ProcessedImage:
     """Grava uma cópia nova, só com os pixels: sem EXIF (localização GPS,
-    modelo do aparelho, data) nem outros metadados. O perfil de cor é mantido,
-    para as cores não mudarem."""
+    modelo do aparelho, data) nem outros metadados. O original é reduzido a
+    `MAX_IMAGE_SIDE`, e a miniatura sai dele, em `THUMBNAIL_SIDE`."""
+    # `thumbnail` só reduz, mantém a proporção e nunca amplia uma imagem menor
     icc_profile = image.info.get("icc_profile")
+    image.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE), Image.Resampling.LANCZOS)
+    thumbnail = image.copy()
+    thumbnail.thumbnail((THUMBNAIL_SIDE, THUMBNAIL_SIDE), Image.Resampling.LANCZOS)
+    return ProcessedImage(
+        data=_save(image, content_type, icc_profile),
+        thumbnail=_save(thumbnail, content_type, icc_profile),
+        content_type=content_type,
+        width=image.width,
+        height=image.height,
+    )
+
+
+def _save(
+    image: Image.Image, content_type: ImageContentType, icc_profile: bytes | None
+) -> bytes:
+    """O perfil de cor é mantido, para as cores não mudarem"""
     output = io.BytesIO()
     if content_type == "image/png":
         # PNG mantém a transparência, útil para peças recortadas
@@ -70,9 +92,4 @@ def _encode(image: Image.Image, content_type: ImageContentType) -> ProcessedImag
         image.save(
             output, "JPEG", quality=JPEG_QUALITY, optimize=True, icc_profile=icc_profile
         )
-    return ProcessedImage(
-        data=output.getvalue(),
-        content_type=content_type,
-        width=image.width,
-        height=image.height,
-    )
+    return output.getvalue()

@@ -40,12 +40,12 @@ describe('fotos: lista', () => {
 		await expect.element(page.getByText(/ainda não enviou nenhuma foto/)).toBeVisible();
 	});
 
-	it('lista as fotos, buscando cada imagem pela API', async () => {
+	it('lista as fotos, usando a miniatura de cada uma', async () => {
 		mockApi({ 'GET /api/photos/': () => json(200, [PHOTO]) });
 		await render(Page);
 
 		const image = page.getByAltText('Foto enviada em 19 de out. de 2026');
-		await expect.element(image).toHaveAttribute('src', `/api/photos/${PHOTO.uid}/image`);
+		await expect.element(image).toHaveAttribute('src', `/api/photos/${PHOTO.uid}/thumbnail`);
 		await expect.element(image).toHaveAttribute('width', '400');
 		await expect.element(page.getByText('400 × 600')).toBeVisible();
 	});
@@ -115,8 +115,8 @@ describe('fotos: envio', () => {
 		expect(request.headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
 		const images = page.getByRole('img', { name: /Foto enviada em/ }).elements();
 		expect(images.map((image) => image.getAttribute('src'))).toEqual([
-			`/api/photos/${NEW_PHOTO.uid}/image`,
-			`/api/photos/${PHOTO.uid}/image`
+			`/api/photos/${NEW_PHOTO.uid}/thumbnail`,
+			`/api/photos/${PHOTO.uid}/thumbnail`
 		]);
 		await expect.element(page.getByText('Escolher imagem')).toBeVisible();
 	});

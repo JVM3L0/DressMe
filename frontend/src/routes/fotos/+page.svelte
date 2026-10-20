@@ -10,7 +10,7 @@
 	import {
 		deletePhoto,
 		listPhotos,
-		photoImageUrl,
+		photoThumbnailUrl,
 		uploadPhoto,
 		type Photo
 	} from '#lib/photos/photos.ts';
@@ -136,7 +136,7 @@
 					{@const date = dateFormat.format(new Date(photo.created_at))}
 					<li>
 						<MediaCard
-							src={photoImageUrl(photo.uid)}
+							src={photoThumbnailUrl(photo.uid)}
 							width={photo.width}
 							height={photo.height}
 							alt={`Foto enviada em ${date}`}

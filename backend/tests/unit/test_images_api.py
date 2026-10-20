@@ -7,7 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from PIL import Image
 
 from config import settings
-from domain.entities.image import MAX_IMAGE_BYTES
+from domain.entities.image import MAX_IMAGE_BYTES, THUMBNAIL_SIDE
 from infrastructure.storage.local_image_storage import LocalImageStorage
 from infrastructure.web.dependencies import (
     get_current_user,
@@ -106,6 +106,34 @@ class TestPhotosApi:
         assert response.headers["cache-control"] == IMAGE_CACHE_CONTROL
         assert Image.open(io.BytesIO(response.content)).format == "PNG"
 
+    async def test_thumbnail_is_smaller_and_kept_private(self, client, photos, storage):
+        big = jpeg_bytes(1600, 1200)
+        uid = (await client.post("/photos/", files=upload(big))).json()["uid"]
+
+        response = await client.get(f"/photos/{uid}/thumbnail")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.headers["content-type"] == "image/jpeg"
+        assert response.headers["cache-control"] == IMAGE_CACHE_CONTROL
+        assert max(Image.open(io.BytesIO(response.content)).size) == THUMBNAIL_SIDE
+        full = await client.get(f"/photos/{uid}/image")
+        assert len(response.content) < len(full.content)
+        # As duas versões ficam no disco, com chaves derivadas
+        image = photos.items[0].image
+        assert storage.path(image.key).exists()
+        assert storage.path(image.thumbnail_key).exists()
+
+    async def test_thumbnail_behind_nginx_points_to_the_thumbnail_file(
+        self, client, photos, monkeypatch
+    ):
+        monkeypatch.setattr(settings, "MEDIA_ACCEL_REDIRECT", True)
+        uid = (await client.post("/photos/", files=upload(jpeg_bytes()))).json()["uid"]
+
+        response = await client.get(f"/photos/{uid}/thumbnail")
+
+        key = photos.items[0].image.thumbnail_key
+        assert response.headers["x-accel-redirect"] == f"/_media/{key}"
+
     async def test_behind_nginx_the_api_only_authorizes(
         self, client, photos, monkeypatch
     ):
@@ -121,12 +149,13 @@ class TestPhotosApi:
 
     async def test_delete_removes_photo_and_file(self, client, photos, storage):
         uid = (await client.post("/photos/", files=upload(jpeg_bytes()))).json()["uid"]
-        path = storage.path(photos.items[0].image.key)
+        image = photos.items[0].image
+        paths = [storage.path(image.key), storage.path(image.thumbnail_key)]
 
         response = await client.delete(f"/photos/{uid}")
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not path.exists()
+        assert not any(path.exists() for path in paths)
         assert (await client.get("/photos/")).json() == []
         assert (await client.get(f"/photos/{uid}/image")).status_code == 404
 
@@ -139,6 +168,7 @@ class TestPhotosApi:
         assert (await client.get("/photos/")).json() == []
         for response in (
             await client.get(f"/photos/{uid}/image"),
+            await client.get(f"/photos/{uid}/thumbnail"),
             await client.delete(f"/photos/{uid}"),
         ):
             assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -237,11 +267,13 @@ class TestGarmentsApi:
         ).json()["uid"]
 
         current_user["user"] = BRUNO
-        assert (await client.get(f"/garments/{uid}/image")).status_code == 404
-        assert (await client.delete(f"/garments/{uid}")).status_code == 404
+        for suffix in ("/image", "/thumbnail", ""):
+            method = client.delete if suffix == "" else client.get
+            assert (await method(f"/garments/{uid}{suffix}")).status_code == 404
 
         current_user["user"] = ALICE
         assert (await client.get(f"/garments/{uid}/image")).status_code == 200
+        assert (await client.get(f"/garments/{uid}/thumbnail")).status_code == 200
         assert (await client.delete(f"/garments/{uid}")).status_code == 204
         assert list(storage.root.rglob("*.jpg")) == []
 
@@ -252,10 +284,12 @@ class TestGarmentsApi:
         ("GET", "/photos/"),
         ("POST", "/photos/"),
         ("GET", "/photos/00000000-0000-0000-0000-000000000001/image"),
+        ("GET", "/photos/00000000-0000-0000-0000-000000000001/thumbnail"),
         ("DELETE", "/photos/00000000-0000-0000-0000-000000000001"),
         ("GET", "/garments/"),
         ("POST", "/garments/"),
         ("GET", "/garments/00000000-0000-0000-0000-000000000001/image"),
+        ("GET", "/garments/00000000-0000-0000-0000-000000000001/thumbnail"),
         ("DELETE", "/garments/00000000-0000-0000-0000-000000000001"),
     ],
 )

@@ -32,13 +32,17 @@ async def read_image_upload(file: UploadFile) -> bytes:
     return bytes(data)
 
 
-def image_response(image: StoredImage, storage: LocalImageStorage) -> Response:
+def image_response(
+    image: StoredImage, storage: LocalImageStorage, *, thumbnail: bool = False
+) -> Response:
+    """Entrega a imagem, ou a miniatura (mesmo formato), ao dono"""
+    key = image.thumbnail_key if thumbnail else image.key
     headers = {"Cache-Control": IMAGE_CACHE_CONTROL}
     if settings.MEDIA_ACCEL_REDIRECT:
         # A API já conferiu o dono; o nginx entrega o arquivo sem passar os
         # bytes pelo Python
-        headers["X-Accel-Redirect"] = ACCEL_REDIRECT_PREFIX + image.key
+        headers["X-Accel-Redirect"] = ACCEL_REDIRECT_PREFIX + key
         return Response(media_type=image.content_type, headers=headers)
     return FileResponse(
-        storage.path(image.key), media_type=image.content_type, headers=headers
+        storage.path(key), media_type=image.content_type, headers=headers
     )

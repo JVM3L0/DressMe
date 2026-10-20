@@ -61,7 +61,10 @@ class TestImageUploader:
 
         assert image.key.startswith("photos/") and image.key.endswith(".jpg")
         uuid.UUID(image.key.removeprefix("photos/").removesuffix(".jpg"))
-        assert storage.files == {image.key: b"processed:foto"}
+        assert storage.files == {
+            image.key: b"processed:foto",
+            image.thumbnail_key: b"thumbnail:foto",
+        }
         assert (image.width, image.height) == (300, 400)
 
     async def test_rejects_too_large_before_processing(self, uploader, storage):
@@ -82,12 +85,27 @@ class TestImageUploader:
 
         assert storage.files == {}
 
-    async def test_removes_file_when_persisting_fails(self, uploader, storage):
+    async def test_removes_files_when_persisting_fails(self, uploader, storage):
         async def persist(image):
             raise RuntimeError("banco fora")
 
         with pytest.raises(RuntimeError):
             await uploader.store(b"foto", "photos", persist)
+
+        assert storage.files == {}
+
+    async def test_removes_the_image_when_saving_the_thumbnail_fails(self, uploader):
+        class StorageFailingOnThumbnail(FakeImageStorage):
+            async def save(self, key: str, data: bytes) -> None:
+                if "_thumb" in key:
+                    raise OSError("disco cheio")
+                await super().save(key, data)
+
+        storage = StorageFailingOnThumbnail()
+        uploader = ImageUploader(processor=FakeImageProcessor(), storage=storage)
+
+        with pytest.raises(OSError):
+            await uploader.store(b"foto", "photos", None)
 
         assert storage.files == {}
 
@@ -113,7 +131,9 @@ class TestPhotos:
         with pytest.raises(ResourceNotFoundError):
             await GetPhotoUseCase(photos).execute(photo.uid, OTHER)
 
-    async def test_delete_removes_record_and_file(self, photos, uploader, storage):
+    async def test_delete_removes_record_image_and_thumbnail(
+        self, photos, uploader, storage
+    ):
         photo = await UploadPhotoUseCase(photos, uploader).execute(OWNER, b"a")
 
         await DeletePhotoUseCase(photos, storage).execute(photo.uid, OWNER)

@@ -81,7 +81,11 @@ class FakeImageProcessor:
         if data.startswith(b"invalid"):
             raise InvalidImageError()
         return ProcessedImage(
-            data=b"processed:" + data, content_type="image/jpeg", width=300, height=400
+            data=b"processed:" + data,
+            thumbnail=b"thumbnail:" + data,
+            content_type="image/jpeg",
+            width=300,
+            height=400,
         )
 
 

@@ -7,6 +7,9 @@ export type Photo = components['schemas']['PhotoPublic'];
 /** A imagem só é entregue ao dono, com o cookie da sessão (mesma origem) */
 export const photoImageUrl = (uid: string) => `/api/photos/${uid}/image`;
 
+/** Miniatura (até 480 px) para as grades; a imagem inteira é para o provador */
+export const photoThumbnailUrl = (uid: string) => `/api/photos/${uid}/thumbnail`;
+
 export const listPhotos = (): Promise<Result<Photo[]>> => request(() => api.GET('/photos/'));
 
 export function uploadPhoto(file: File): Promise<Result<Photo>> {
