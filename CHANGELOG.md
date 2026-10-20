@@ -17,6 +17,7 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
   - "Compartilhar tudo" (foto, roupas e texto) em aparelhos que suportam.
 - Link "Provador" no cabeçalho.
 - O teste de ponta a ponta cobre o provador, com a área de transferência de verdade.
+- Débito técnico DT-14 (menu ruim no celular).
 
 ### Corrigido
 

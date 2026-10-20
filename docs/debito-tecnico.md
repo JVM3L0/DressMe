@@ -21,6 +21,7 @@ Resolvidos:
 | --- | --- | --- | --- |
 | [DT-10](#dt-10-sessões-sem-revogação) | 🟢 | Segurança | Sessões sem revogação |
 | [DT-11](#dt-11-arquivos-órfãos-ao-apagar-contas) | 🟡 | Privacidade | Arquivos órfãos ao apagar contas |
+| [DT-14](#dt-14-menu-ruim-no-celular) | 🟡 | UX / Mobile | Menu ruim no celular |
 
 ---
 
@@ -38,3 +39,16 @@ Resolvidos:
 - **Proposta:**
   - ao implementar a exclusão de conta, listar as chaves das imagens do usuário, apagar os registros e, depois, os arquivos (`ImageStorage.delete`);
   - um comando de manutenção que compara `media/` com `image_key` no banco e remove o que não está referenciado.
+
+### DT-14: Menu ruim no celular
+
+- **Evidência:** o produto é usado principalmente no celular, mas o menu é o mesmo do computador, só que quebrado em linhas. Com os 4 links (Fotos, Guarda-roupa, Provador e Sua conta) numa tela de 390 px, eles se espremem ao lado do logo, em duas linhas, com texto pequeno e sem distinção clara do destino atual. Além disso, os links só aparecem depois que a página consulta a sessão (`GET /users/me`), então o cabeçalho muda de altura logo após o carregamento.
+- **Proposta:**
+  - barra de navegação **fixa na parte de baixo** (como num app), com ícone e rótulo para cada destino, ao alcance do polegar;
+  - alvos de toque de pelo menos 44 px, destino atual marcado (`aria-current`) e respeito à área segura do aparelho (`safe-area-inset-bottom`);
+  - o cabeçalho fica só com o logo e o botão de tema (e "Entrar", para quem não tem sessão), e o conteúdo ganha uma margem inferior para a barra não cobrir o rodapé;
+  - espaço reservado para a barra enquanto a sessão carrega, para não haver salto;
+  - no computador, o menu continua no cabeçalho.
+  - Um menu "hambúrguer" foi descartado: esconderia atrás de um toque os 4 destinos principais do produto.
+  - Cobrir com teste de componente e com o e2e em viewport de celular.
+
