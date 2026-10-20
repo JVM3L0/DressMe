@@ -31,6 +31,9 @@ const EXPECTED_CONSOLE = /status of (401|422)\b/;
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// A área de transferência só funciona em contexto seguro: localhost é, e o
+// navegador pede permissão de leitura para o teste conferir o que foi copiado
+await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE_URL });
 const page = await context.newPage();
 page.setDefaultTimeout(15_000);
 
@@ -146,7 +149,7 @@ try {
 		assert.equal(direct.status(), 404, '/_media/ deve ser interno ao nginx');
 	});
 
-	await step('adiciona peças, filtra por categoria e exclui', async () => {
+	await step('adiciona peças e filtra por categoria', async () => {
 		await page.getByRole('link', { name: 'Guarda-roupa' }).click();
 		await page.getByText('guarda-roupa está vazio').waitFor();
 
@@ -165,7 +168,72 @@ try {
 		assert.equal(await page.locator('.card').count(), 1);
 		await page.getByRole('button', { name: /^Tudo/ }).click();
 		await imageLoaded('.card img');
+	});
 
+	await step('o provador monta o conjunto e copia foto, roupas e texto de verdade', async () => {
+		await page.getByRole('link', { name: 'Provador' }).click();
+		await page.getByRole('button', { name: 'Escolher Parte de cima' }).waitFor();
+		const pick = async (slot, piece) => {
+			await page.getByRole('button', { name: `Escolher ${slot}` }).click();
+			await page.getByRole('dialog').getByRole('button', { name: piece }).click();
+		};
+		await pick('Parte de baixo', 'Calça preta');
+		await pick('Parte de cima', 'Camisa azul');
+
+		const prompt = await page.getByLabel('Texto para colar na IA').inputValue();
+		assert.match(prompt, /1\. Top: "Camisa azul"/);
+		assert.match(prompt, /2\. Bottom: "Calça preta"/);
+
+		const clipboardImage = () =>
+			page.evaluate(async () => {
+				const [item] = await navigator.clipboard.read();
+				const blob = await item.getType('image/png');
+				const bitmap = await createImageBitmap(blob);
+				const signature = [...new Uint8Array(await blob.slice(0, 8).arrayBuffer())];
+				return { size: [bitmap.width, bitmap.height], signature };
+			});
+		const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
+
+		await page.getByRole('button', { name: 'Copiar foto' }).click();
+		await page.getByText('Foto copiada').waitFor();
+		const photo = await clipboardImage();
+		assert.deepEqual(
+			photo.signature,
+			PNG_SIGNATURE,
+			'a foto vai como PNG para a área de transferência'
+		);
+		assert.deepEqual(photo.size, [600, 400], 'a foto sai girada e sem o EXIF');
+
+		await page.getByRole('button', { name: 'Copiar roupas' }).click();
+		await page.getByText('Roupas copiadas').waitFor();
+		const clothes = await clipboardImage();
+		assert.deepEqual(clothes.signature, PNG_SIGNATURE);
+		assert.deepEqual(clothes.size, [1024, 512], 'duas peças: duas células quadradas lado a lado');
+
+		await page.getByRole('button', { name: 'Copiar texto' }).click();
+		await page.getByText('Texto copiado').waitFor();
+		assert.equal(await page.evaluate(() => navigator.clipboard.readText()), prompt);
+	});
+
+	await step('salva o conjunto, que continua lá depois de recarregar, e o exclui', async () => {
+		await page.getByLabel('Nome do conjunto').fill('Look e2e');
+		await page.getByRole('button', { name: 'Salvar conjunto' }).click();
+		await page.getByText('Conjunto salvo.').waitFor();
+
+		await page.reload();
+		await ready();
+		await page.getByRole('button', { name: 'Usar o conjunto Look e2e' }).click();
+		await page.getByRole('button', { name: 'Trocar Parte de cima: Camisa azul' }).waitFor();
+		await page.getByRole('button', { name: 'Trocar Parte de baixo: Calça preta' }).waitFor();
+
+		await page.getByRole('button', { name: 'Excluir o conjunto Look e2e' }).click();
+		await page.getByRole('button', { name: 'Excluir mesmo' }).click();
+		await page.getByText('Conjunto excluído.').waitFor();
+	});
+
+	await step('exclui as peças', async () => {
+		await page.getByRole('link', { name: 'Guarda-roupa' }).click();
+		await imageLoaded('.card img');
 		await page.getByRole('button', { name: 'Excluir Camisa azul' }).click();
 		await page.getByRole('button', { name: 'Excluir mesmo' }).click();
 		await page.getByText('Peça excluída.').waitFor();
