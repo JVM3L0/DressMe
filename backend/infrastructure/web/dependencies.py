@@ -6,6 +6,7 @@ from fastapi.security import APIKeyCookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from application.interfaces.garment_repository import GarmentRepository
+from application.interfaces.outfit_repository import OutfitRepository
 from application.interfaces.photo_repository import PhotoRepository
 from application.interfaces.user_repository import UserRepository
 from application.services.image_upload import ImageUploader
@@ -23,6 +24,9 @@ from infrastructure.images.pillow_processor import PillowImageProcessor
 from infrastructure.persistence.database import get_db_session
 from infrastructure.repositories.sqlalchemy_garment_repository import (
     SQLAlchemyGarmentRepository,
+)
+from infrastructure.repositories.sqlalchemy_outfit_repository import (
+    SQLAlchemyOutfitRepository,
 )
 from infrastructure.repositories.sqlalchemy_photo_repository import (
     SQLAlchemyPhotoRepository,
@@ -165,3 +169,10 @@ def get_garment_repository(session: SessionDep) -> GarmentRepository:
 
 
 GarmentRepositoryDep = Annotated[GarmentRepository, Depends(get_garment_repository)]
+
+
+def get_outfit_repository(session: SessionDep) -> OutfitRepository:
+    return SQLAlchemyOutfitRepository(session)
+
+
+OutfitRepositoryDep = Annotated[OutfitRepository, Depends(get_outfit_repository)]

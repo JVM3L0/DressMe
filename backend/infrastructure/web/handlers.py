@@ -4,6 +4,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
+from domain.exceptions.outfit import InvalidOutfitError, OutfitProblem
+
 
 async def user_already_exists_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
@@ -45,6 +47,24 @@ async def invalid_image_handler(request: Request, exc: Exception) -> JSONRespons
     return JSONResponse(
         status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         content={"detail": "Envie uma imagem JPEG ou PNG."},
+    )
+
+
+_OUTFIT_MESSAGES = {
+    OutfitProblem.EMPTY: "Escolha ao menos uma peça.",
+    OutfitProblem.DUPLICATE_CATEGORY: "Use no máximo uma peça por categoria.",
+    OutfitProblem.ONE_PIECE_CONFLICT: (
+        "Uma peça única não combina com parte de cima ou de baixo."
+    ),
+    OutfitProblem.UNKNOWN_GARMENT: "Alguma das peças não existe mais.",
+}
+
+
+async def invalid_outfit_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, InvalidOutfitError)
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content={"detail": _OUTFIT_MESSAGES[exc.problem], "code": exc.problem.value},
     )
 
 

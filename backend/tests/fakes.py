@@ -2,6 +2,7 @@ from uuid import UUID, uuid4
 
 from domain.entities.garment import Garment
 from domain.entities.image import ProcessedImage, StoredImage
+from domain.entities.outfit import Outfit
 from domain.entities.photo import Photo
 from domain.entities.user import User
 from domain.enums.garment_category import GarmentCategory
@@ -100,7 +101,7 @@ class FakeImageStorage:
         self.files.pop(key, None)
 
 
-class _FakeOwnedRepository[T: (Photo, Garment)]:
+class _FakeOwnedRepository[T: (Photo, Garment, Outfit)]:
     def __init__(self) -> None:
         self.items: list[T] = []
 
@@ -127,6 +128,9 @@ class FakePhotoRepository(_FakeOwnedRepository[Photo]):
 
 
 class FakeGarmentRepository(_FakeOwnedRepository[Garment]):
+    async def list_by_ids(self, uids: list[UUID], owner_id: UUID) -> list[Garment]:
+        return [g for g in self.items if g.uid in uids and g.owner_id == owner_id]
+
     async def list_by_owner(
         self, owner_id: UUID, category: GarmentCategory | None = None
     ) -> list[Garment]:
@@ -135,3 +139,17 @@ class FakeGarmentRepository(_FakeOwnedRepository[Garment]):
             for g in self._by_owner(owner_id)
             if category is None or g.category == category
         ]
+
+
+def make_garment(owner_id: UUID, category: GarmentCategory, **overrides) -> Garment:
+    data = {"owner_id": owner_id, "category": category, "image": make_stored_image()}
+    return Garment(**(data | overrides))
+
+
+class FakeOutfitRepository(_FakeOwnedRepository[Outfit]):
+    async def list_by_owner(self, owner_id: UUID) -> list[Outfit]:
+        return self._by_owner(owner_id)
+
+    async def update(self, outfit: Outfit) -> Outfit:
+        self.items = [outfit if i.uid == outfit.uid else i for i in self.items]
+        return outfit

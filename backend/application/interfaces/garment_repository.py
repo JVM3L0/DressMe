@@ -16,4 +16,9 @@ class GarmentRepository(Protocol):
 
     async def get_for_owner(self, uid: UUID, owner_id: UUID) -> Garment | None: ...
 
+    async def list_by_ids(self, uids: list[UUID], owner_id: UUID) -> list[Garment]:
+        """As peças do usuário entre `uids`. Ids de outro usuário ou que não
+        existem simplesmente não vêm."""
+        ...
+
     async def delete(self, garment: Garment) -> None: ...
