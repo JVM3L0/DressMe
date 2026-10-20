@@ -1,6 +1,6 @@
 # ADR-0001: Escopo da prova de conceito, sem IA
 
-- **Status:** Aceito. O item 4, "Login", foi substituído pelo [ADR-0006](0006-sessao-em-cookie-e-protecao-de-contas.md)
+- **Status:** Aceito. O item 4, "Login", foi substituído pelo [ADR-0006](0006-sessao-em-cookie-e-protecao-de-contas.md), e o item 2, "A prova virtual é manual", pelo [ADR-0008](0008-conjuntos-e-ponte-para-ia-externa.md)
 - **Data:** 2026-10-19
 
 ## Contexto

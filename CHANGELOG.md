@@ -2,6 +2,41 @@
 
 As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (veja o [ADR-0005](docs/adr/0005-versionamento-semantico-por-branch.md)).
 
+## [0.5.0] - 2026-10-20
+
+### Adicionado
+
+- Provador (`/provador`) e conjuntos de peças ([ADR-0008](docs/adr/0008-conjuntos-e-ponte-para-ia-externa.md)):
+  - a foto ao lado de um mapa do corpo, com um quadradinho para cada categoria na posição em que a peça é vestida (acessório na cabeça, agasalho e parte de cima no tronco, parte de baixo nas pernas, calçado nos pés); os acessórios (até 4) ficam numa fileira de quadradinhos pequenos no alto; a peça única fica na vertical, ocupando a altura do tronco e das pernas, e o app avisa o que sairá do conjunto antes de trocar;
+  - conjuntos salvos com nome (API `POST`/`GET /outfits/`, `PUT` e `DELETE /outfits/{id}`): usar, atualizar, salvar como novo e excluir. Excluir um conjunto não exclui as peças, e excluir uma peça a tira dos conjuntos;
+  - o backend confere a composição: peças do usuário e sem repetir, uma por categoria (até 4 acessórios), e peça única sem parte de cima ou de baixo.
+- Levar o conjunto para uma IA de imagens, sem o VirtualFit enviar nada a ninguém:
+  - a imagem das roupas é montada no navegador, numa grade de quadradinhos em ordem do corpo (até 8 peças);
+  - copiar a foto e copiar a imagem das roupas (PNG) para a área de transferência, e baixar as duas imagens (em contexto seguro; em HTTP só o download);
+  - texto em inglês gerado por regras a partir das peças (categoria e nome), com a opção de manter o fundo e um pedido extra, para copiar e colar na IA;
+  - "Compartilhar tudo" (foto, roupas e texto) em aparelhos que suportam.
+- Link "Provador" no cabeçalho.
+- Painel "Levar para uma IA" ao lado da montagem, no computador (acompanha a rolagem, sempre visível), e logo abaixo dela no celular, com a pré-visualização da imagem das roupas que será copiada.
+- Copiar sem HTTPS (celular na rede local): quando o navegador não deixa copiar imagens por botão, "Mostrar foto/roupas para copiar" exibe a imagem inteira para segurar o dedo e tocar em "Copiar imagem", que é um recurso do próprio navegador e não depende de HTTPS.
+- Mais *affordances* no provador: encaixes vazios com o ícone da categoria, um "+" e "Toque para escolher"; peças preenchidas com o ícone de trocar; acessórios com "Adicionar" e a dica "Toque num acessório para trocar ou tirar"; botão da peça única com ícone; botões do painel com ícones (copiar, baixar, mostrar, compartilhar); dica para trocar de foto; resposta ao toque (afundar) e ao mouse.
+- Quadradinhos do mapa maiores no celular (de ~110 para ~173 px, ocupando a largura da tela) e legenda das peças escolhidas numa linha só (o nome), para a imagem aparecer inteira.
+- Botões padronizados em todo o app: mesma altura e borda (44 px) em uma só definição global, com as variantes primário, contorno (`secondary`) e exclusão (`danger`), e grupos (`button-group`) em que todos os botões têm a mesma largura.
+- Menu para celular (DT-14): quem está logado ganha uma barra de navegação fixa embaixo da tela, com ícone e rótulo para Fotos, Guarda-roupa, Provador e Sua conta, alvos de toque grandes, o destino atual marcado e respeito à área segura do aparelho. O cabeçalho fica só com o logo e o botão de tema. No computador, o menu continua no cabeçalho.
+- O teste de ponta a ponta cobre o provador, com a área de transferência de verdade.
+
+### Corrigido
+
+- Um registro de imagem sem o arquivo no disco (arquivo apagado, disco restaurado pela metade) passa a responder `404`, e não um erro `500`; o provador explica que a peça (ou foto) deve ser excluída e enviada de novo.
+
+### Corrigido
+
+- Gerenciador de senhas: o e-mail passa a ser o login que ele guarda e preenche (`autocomplete="username"` no cadastro e no login), e o nome de usuário vira só o apelido (`nickname`). Antes, ele poderia salvar o nome de usuário como login, e o preenchimento no login usaria um valor que não entra.
+
+### Alterado
+
+- O item "prova virtual manual com arrastar, redimensionar e girar" do ADR-0001 foi substituído pelo ADR-0008.
+- A etapa "Monte o conjunto" substitui "Prove sem trocar de roupa" na página inicial.
+
 ## [0.4.0] - 2026-10-20
 
 ### Adicionado
@@ -99,6 +134,7 @@ Primeira versão da API, consolidando o trabalho até a reorganização em monor
 - Valores das queries ocultos nos logs, e erros 422 sem ecoar a entrada (para não expor senhas).
 - Postgres e API acessíveis apenas por `127.0.0.1` no compose, e credenciais no `.env`.
 
+[0.5.0]: https://github.com/JVM3L0/DressMe/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JVM3L0/DressMe/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/JVM3L0/DressMe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JVM3L0/DressMe/compare/v0.1.0...v0.2.0

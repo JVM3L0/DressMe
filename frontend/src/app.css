@@ -65,6 +65,9 @@
 	--page-gutter: clamp(1rem, 4vw, 2.5rem);
 
 	--duration-quick: 150ms;
+
+	/* Altura da barra de navegação fixa do celular (SiteNav) */
+	--tabbar-height: 3.5rem;
 }
 
 /*
@@ -197,29 +200,89 @@ svg {
 }
 
 /* Ação principal; serve para <a> e <button> */
+/*
+ * Botões: um só tamanho e uma só forma em todo o app (44px de altura mínima e borda de
+ * 2px, para o primário e o de contorno terem exatamente o mesmo tamanho).
+ * Variantes: primário (padrão), `.secondary` (contorno) e `.danger` (exclusão).
+ * Em um `.button-group`, todos os botões têm a mesma largura e altura.
+ */
 .button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	gap: var(--space-2);
 	min-height: 2.75rem;
-	padding: var(--space-2) var(--space-6);
-	border: 0;
+	padding: var(--space-2) var(--space-4);
+	border: 2px solid var(--button-bg, var(--color-primary));
 	border-radius: var(--radius-field);
 	background: var(--button-bg, var(--color-primary));
 	color: var(--button-text, var(--color-on-primary));
 	font: inherit;
 	font-weight: 600;
+	line-height: 1.25;
+	text-align: center;
 	text-decoration: none;
 	cursor: pointer;
-	transition: filter var(--duration-quick) ease-out;
+	transition:
+		filter var(--duration-quick) ease-out,
+		transform var(--duration-quick) ease-out;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
 	filter: brightness(0.92);
 }
 
+/* Resposta ao toque: o botão afunda um pouco */
+.button:active:not(:disabled) {
+	transform: translateY(1px) scale(0.98);
+}
+
+.button.secondary {
+	border-color: var(--secondary-border, var(--color-border));
+	background: transparent;
+	color: var(--secondary-text, var(--color-text));
+}
+
+.button.secondary:hover:not(:disabled),
+.button.secondary[aria-pressed='true'] {
+	filter: none;
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+.button.danger {
+	border-color: var(--color-danger);
+	background: var(--color-danger);
+	color: var(--color-bg);
+}
+
 .button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+/* Enviando: o botão fica desabilitado, mas o cursor mostra que algo está em andamento */
+.button[aria-busy='true']:disabled {
 	cursor: progress;
 	opacity: 0.75;
+}
+
+.button-group {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+	gap: var(--space-2);
+}
+
+.button-group > .button {
+	width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.button {
+		transition: none;
+	}
+
+	.button:active:not(:disabled) {
+		transform: none;
+	}
 }

@@ -1,0 +1,632 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+	import { tick } from 'svelte';
+
+	import FormAlert from '#lib/components/FormAlert.svelte';
+	import AccessoryRow from '#lib/components/AccessoryRow.svelte';
+	import GarmentPicker from '#lib/components/GarmentPicker.svelte';
+	import Icon from '#lib/components/Icon.svelte';
+	import OutfitOutput from '#lib/components/OutfitOutput.svelte';
+	import OutfitSlot from '#lib/components/OutfitSlot.svelte';
+	import RequireSession from '#lib/components/RequireSession.svelte';
+	import SavedOutfits from '#lib/components/SavedOutfits.svelte';
+	import TextField from '#lib/components/TextField.svelte';
+	import { FAILURE_MESSAGES, type FailureKind } from '#lib/media/request.ts';
+	import {
+		OUTFIT_NAME_MAX,
+		deleteOutfit,
+		listOutfits,
+		outfitFailureMessage,
+		saveOutfit,
+		updateOutfit,
+		type Outfit
+	} from '#lib/outfit/outfits.ts';
+	import {
+		choose,
+		clear,
+		firstIn,
+		idsOf,
+		isEmpty,
+		orderedPieces,
+		piecesIn,
+		remove,
+		replacedBy,
+		selectionFromIds,
+		visibleSlots,
+		type Piece,
+		type Selection
+	} from '#lib/outfit/slots.ts';
+	import { listPhotos, photoImageUrl, photoThumbnailUrl, type Photo } from '#lib/photos/photos.ts';
+	import { loadSession, session } from '#lib/session.svelte.ts';
+	import type { GarmentCategory } from '#lib/wardrobe/categories.ts';
+	import { listGarments, type Garment } from '#lib/wardrobe/garments.ts';
+
+	let garments: Garment[] = $state([]);
+	let photos: Photo[] = $state([]);
+	let outfits: Outfit[] = $state([]);
+	let loading: 'loading' | 'ready' | 'error' = $state('loading');
+	let loadError = $state('');
+
+	let selection: Selection = $state({});
+	let photoUid: string | undefined = $state();
+	/** Escolha em andamento: a categoria e, nos acessórios, qual está sendo trocado */
+	let picking: { category: GarmentCategory; replacing?: Piece } | undefined = $state();
+
+	let active: Outfit | undefined = $state();
+	let outfitName = $state('');
+	let nameError = $state('');
+	let saving = $state(false);
+	let deletingUid: string | undefined = $state();
+	let formError = $state('');
+	let notice = $state('');
+
+	let stageHeading: HTMLHeadingElement | undefined = $state();
+	let nameInput: HTMLInputElement | undefined = $state();
+
+	const pieces = $derived(orderedPieces(selection));
+	const slots = $derived(visibleSlots(selection));
+	const photo = $derived(photos.find((item) => item.uid === photoUid));
+
+	$effect(() => {
+		if (session.current.status === 'authenticated') load();
+	});
+
+	/** Sessão vencida: ao marcá-la como anônima, a página manda para o login */
+	async function failed(kind: FailureKind): Promise<string> {
+		if (kind === 'unauthenticated') await loadSession();
+		return FAILURE_MESSAGES[kind];
+	}
+
+	async function load() {
+		loading = 'loading';
+		const [garmentResult, photoResult, outfitResult] = await Promise.all([
+			listGarments(),
+			listPhotos(),
+			listOutfits()
+		]);
+		if (garmentResult.kind === 'ok' && photoResult.kind === 'ok' && outfitResult.kind === 'ok') {
+			garments = garmentResult.data;
+			photos = photoResult.data;
+			outfits = outfitResult.data;
+			// A foto mais recente já vem escolhida
+			photoUid ??= photos[0]?.uid;
+			loading = 'ready';
+			return;
+		}
+		const problem = [garmentResult, photoResult, outfitResult].find((r) => r.kind !== 'ok');
+		loadError = await failed((problem?.kind ?? 'unexpected') as FailureKind);
+		loading = 'error';
+	}
+
+	function handlePick(garment: Garment) {
+		selection = choose(selection, garment, picking?.replacing);
+		picking = undefined;
+		notice = '';
+	}
+
+	/** Tira o acessório que estava sendo trocado */
+	function handleRemovePicked() {
+		if (picking?.replacing) selection = remove(selection, picking.replacing);
+		notice = '';
+	}
+
+	function handleClear(category: GarmentCategory) {
+		selection = clear(selection, category);
+		notice = '';
+	}
+
+	function startOver() {
+		selection = {};
+		active = undefined;
+		outfitName = '';
+		nameError = '';
+		notice = '';
+		formError = '';
+	}
+
+	async function handleUse(outfit: Outfit) {
+		selection = selectionFromIds(outfit.garment_ids, garments);
+		active = outfit;
+		outfitName = outfit.name;
+		nameError = formError = '';
+		const missing = outfit.garment_ids.length - idsOf(selection).length;
+		notice =
+			missing > 0
+				? `Conjunto “${outfit.name}” carregado. ${missing === 1 ? 'Uma peça não existe mais' : `${missing} peças não existem mais`}.`
+				: `Conjunto “${outfit.name}” carregado.`;
+		// O conjunto aparece no alto da página: leva o foco até lá
+		await tick();
+		stageHeading?.focus();
+		stageHeading?.scrollIntoView({ block: 'start' });
+	}
+
+	/** Valida o formulário de salvar; foca o primeiro campo com problema */
+	function validateSave(): boolean {
+		formError = '';
+		nameError = outfitName.trim() ? '' : 'Dê um nome ao conjunto.';
+		if (nameError) {
+			nameInput?.focus();
+			return false;
+		}
+		if (isEmpty(selection)) {
+			formError = 'Escolha ao menos uma peça.';
+			return false;
+		}
+		return true;
+	}
+
+	async function save(mode: 'create' | 'update') {
+		if (!validateSave()) return;
+		saving = true;
+		notice = '';
+		const ids = idsOf(selection);
+		const result =
+			mode === 'update' && active
+				? await updateOutfit(active.uid, outfitName, ids)
+				: await saveOutfit(outfitName, ids);
+		saving = false;
+
+		if (result.kind !== 'ok') {
+			if (result.kind === 'unauthenticated') await loadSession();
+			formError = outfitFailureMessage(result.kind);
+			return;
+		}
+		const saved = result.data;
+		outfits =
+			mode === 'update'
+				? outfits.map((o) => (o.uid === saved.uid ? saved : o))
+				: [saved, ...outfits];
+		active = saved;
+		outfitName = saved.name;
+		notice = mode === 'update' ? 'Conjunto atualizado.' : 'Conjunto salvo.';
+	}
+
+	async function handleDelete(outfit: Outfit) {
+		formError = '';
+		notice = '';
+		deletingUid = outfit.uid;
+		const result = await deleteOutfit(outfit.uid);
+		deletingUid = undefined;
+
+		// "Não existe mais" também resolve: o conjunto já não está lá
+		if (result.kind === 'ok' || result.kind === 'not_found') {
+			outfits = outfits.filter((item) => item.uid !== outfit.uid);
+			if (active?.uid === outfit.uid) active = undefined;
+			notice = 'Conjunto excluído.';
+			return;
+		}
+		formError = await failed(result.kind);
+	}
+</script>
+
+<svelte:head>
+	<title>Provador | VirtualFit</title>
+</svelte:head>
+
+<RequireSession>
+	<div class="stack">
+		<div class="intro">
+			<h1 tabindex="-1" bind:this={stageHeading}>Provador</h1>
+			<p>Monte um conjunto com as suas peças e leve para uma IA de imagens vestir a sua foto.</p>
+		</div>
+
+		{#if loading === 'loading'}
+			<p role="status" class="muted">Carregando seu provador…</p>
+		{:else if loading === 'error'}
+			<FormAlert message={loadError} />
+			<button class="button secondary retry" type="button" onclick={load}>Tentar de novo</button>
+		{:else if garments.length === 0}
+			<p class="muted">
+				Seu guarda-roupa está vazio. Para montar um conjunto, primeiro adicione peças.
+			</p>
+			<a class="button go" href={resolve('/guarda-roupa')}>Ir para o guarda-roupa</a>
+		{:else}
+			<div class="workspace">
+				<section class="stage" aria-label="Montagem do conjunto">
+					<div class="photo">
+						{#if photo}
+							<img
+								class="main-photo"
+								src={photoImageUrl(photo.uid)}
+								width={photo.width}
+								height={photo.height}
+								alt="Sua foto escolhida"
+							/>
+							{#if photos.length > 1}
+								<p class="strip-hint">Toque numa miniatura para trocar a foto</p>
+								<div class="strip" role="group" aria-label="Trocar foto">
+									{#each photos as item, index (item.uid)}
+										<button
+											type="button"
+											aria-pressed={item.uid === photoUid}
+											aria-label={`Foto ${index + 1} de ${photos.length}`}
+											onclick={() => (photoUid = item.uid)}
+										>
+											<img
+												src={photoThumbnailUrl(item.uid)}
+												alt=""
+												loading="lazy"
+												decoding="async"
+											/>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						{:else}
+							<div class="no-photo">
+								<p>Você ainda não enviou nenhuma foto.</p>
+								<a href={resolve('/fotos')}>Enviar uma foto</a>
+							</div>
+						{/if}
+					</div>
+
+					<div class="body">
+						<!-- Mapa do corpo: cabeça, tronco (agasalho e parte de cima), pernas e pés -->
+						<div class="map" role="group" aria-label="Peças do conjunto, na posição do corpo">
+							{#each slots as category (category)}
+								<div class={['cell', category]}>
+									{#if category === 'accessory'}
+										<AccessoryRow
+											pieces={piecesIn(selection, 'accessory')}
+											onadd={() => (picking = { category: 'accessory' })}
+											onedit={(piece) => (picking = { category: 'accessory', replacing: piece })}
+										/>
+									{:else}
+										<OutfitSlot
+											{category}
+											piece={firstIn(selection, category)}
+											tall={category === 'one_piece'}
+											onpick={() => (picking = { category })}
+											onclear={() => handleClear(category)}
+										/>
+									{/if}
+								</div>
+							{/each}
+							<!-- Dá altura à linha das pernas quando a peça única (vertical) ocupa o lugar dela -->
+							{#if selection.one_piece}<div class="cell spacer" aria-hidden="true"></div>{/if}
+						</div>
+						{#if !selection.one_piece}
+							<button
+								type="button"
+								class="button secondary one-piece"
+								onclick={() => (picking = { category: 'one_piece' })}
+							>
+								<Icon name="one_piece" />
+								Escolher peça única (vestido, macacão)
+							</button>
+						{/if}
+					</div>
+				</section>
+
+				<aside class="export-panel" aria-label="Exportar o conjunto">
+					<OutfitOutput {pieces} photoUid={photo?.uid} />
+				</aside>
+
+				<div class="save-area">
+					<FormAlert kind="success" message={notice} />
+
+					<section class="save" aria-labelledby="salvar-conjunto">
+						<h2 id="salvar-conjunto">
+							{active ? `Conjunto: ${active.name}` : 'Salvar este conjunto'}
+						</h2>
+						<form
+							novalidate
+							onsubmit={(event) => {
+								event.preventDefault();
+								save(active ? 'update' : 'create');
+							}}
+						>
+							<TextField
+								label="Nome do conjunto"
+								name="outfit-name"
+								maxlength={OUTFIT_NAME_MAX}
+								autocomplete="off"
+								hint="Por exemplo: “Look de sexta”."
+								error={nameError}
+								bind:value={outfitName}
+								bind:input={nameInput}
+								oninput={() => (nameError = '')}
+							/>
+							<FormAlert message={formError} />
+							<div class="button-group">
+								<button class="button" type="submit" disabled={saving} aria-busy={saving}>
+									{#if saving}Salvando…{:else if active}Atualizar conjunto{:else}Salvar conjunto{/if}
+								</button>
+								{#if active}
+									<button
+										type="button"
+										class="button secondary"
+										disabled={saving}
+										onclick={() => save('create')}
+									>
+										Salvar como novo
+									</button>
+								{/if}
+								<button type="button" class="button secondary" disabled={saving} onclick={startOver}
+									>Começar de novo</button
+								>
+							</div>
+						</form>
+					</section>
+				</div>
+
+				<div class="saved-area">
+					<SavedOutfits
+						{outfits}
+						{garments}
+						activeUid={active?.uid}
+						{deletingUid}
+						onuse={handleUse}
+						ondelete={handleDelete}
+					/>
+				</div>
+			</div>
+		{/if}
+	</div>
+
+	<GarmentPicker
+		category={picking?.category}
+		{garments}
+		current={picking?.replacing ?? (picking ? firstIn(selection, picking.category) : undefined)}
+		replaced={picking ? replacedBy(selection, picking.category) : []}
+		exclude={picking?.category === 'accessory'
+			? piecesIn(selection, 'accessory')
+					.filter((piece) => piece.uid !== picking?.replacing?.uid)
+					.map((piece) => piece.uid)
+			: []}
+		onremove={picking?.replacing ? handleRemovePicked : undefined}
+		onselect={handlePick}
+		onclose={() => (picking = undefined)}
+	/>
+</RequireSession>
+
+<style>
+	.intro {
+		display: grid;
+		gap: var(--space-2);
+		max-width: var(--measure);
+	}
+
+	h1 {
+		font-size: var(--text-2xl);
+	}
+
+	.intro p,
+	.muted {
+		margin: 0;
+		color: var(--color-text-muted);
+	}
+
+	.stack {
+		display: grid;
+		gap: var(--space-8);
+	}
+
+	/* Área de trabalho: a montagem, e o painel de exportação logo depois dela
+	   (no computador, ao lado e acompanhando a rolagem) */
+	.workspace {
+		display: grid;
+		gap: var(--space-8);
+		grid-template-areas: 'stage' 'export' 'save' 'saved';
+	}
+
+	.stage {
+		grid-area: stage;
+		display: grid;
+		gap: var(--space-6);
+		align-items: start;
+	}
+
+	.export-panel {
+		grid-area: export;
+		min-width: 0;
+		padding: var(--space-4);
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius-tag);
+	}
+
+	.save-area {
+		grid-area: save;
+		display: grid;
+		gap: var(--space-4);
+		align-content: start;
+		min-width: 0;
+	}
+
+	.saved-area {
+		grid-area: saved;
+		min-width: 0;
+	}
+
+	.photo {
+		display: grid;
+		gap: var(--space-2);
+		justify-items: center;
+	}
+
+	.main-photo {
+		width: 100%;
+		max-height: 26rem;
+		object-fit: contain;
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius-field);
+		background: var(--color-surface);
+	}
+
+	.strip-hint {
+		margin: 0;
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+	}
+
+	.strip {
+		display: flex;
+		gap: var(--space-2);
+		max-width: 100%;
+		overflow-x: auto;
+	}
+
+	.strip button {
+		flex: none;
+		width: 2.75rem;
+		height: 2.75rem;
+		padding: 2px;
+		border: 2px solid var(--color-border-subtle);
+		border-radius: var(--radius-field);
+		background: var(--color-surface);
+		cursor: pointer;
+	}
+
+	.strip button[aria-pressed='true'] {
+		border-color: var(--color-primary);
+	}
+
+	.strip img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.no-photo {
+		display: grid;
+		gap: var(--space-2);
+		place-content: center;
+		justify-items: center;
+		width: 100%;
+		min-height: 14rem;
+		border: 2px dashed var(--color-border);
+		border-radius: var(--radius-field);
+		text-align: center;
+	}
+
+	.no-photo p {
+		margin: 0;
+		color: var(--color-text-muted);
+	}
+
+	/* No celular, o mapa usa a largura da tela (quadradinhos de ~170px); ao lado da foto,
+	   no computador, uma coluna mais estreita (17rem) */
+	.body {
+		display: grid;
+		gap: var(--space-3);
+		justify-items: center;
+		width: 100%;
+		max-width: 26rem;
+		justify-self: center;
+	}
+
+	/* Mapa do corpo: os quadradinhos ficam onde a peça é vestida. A grade tem 4
+	   colunas e cada quadradinho ocupa 2, o que permite centralizar a cabeça, as
+	   pernas e os pés, e pôr dois quadradinhos lado a lado no tronco */
+	.map {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--space-3);
+		width: 100%;
+	}
+
+	.cell {
+		min-width: 0;
+	}
+
+	/* Acessórios: uma fileira de até 4 quadradinhos pequenos, no alto (a cabeça) */
+	.cell.accessory {
+		grid-area: 1 / 1 / 2 / 5;
+	}
+
+	.cell.outerwear {
+		grid-area: 2 / 1 / 3 / 3;
+	}
+
+	.cell.top {
+		grid-area: 2 / 3 / 3 / 5;
+	}
+
+	.cell.bottom {
+		grid-area: 3 / 2 / 4 / 4;
+	}
+
+	.cell.footwear {
+		grid-area: 4 / 2 / 5 / 4;
+	}
+
+	/* Peça única: vertical, ao lado do agasalho, da altura do tronco e das pernas */
+	.cell.one_piece {
+		grid-area: 2 / 3 / 4 / 5;
+	}
+
+	.cell.spacer {
+		grid-area: 3 / 1 / 4 / 3;
+		aspect-ratio: 1;
+	}
+
+	.one-piece {
+		width: 100%;
+		font-size: var(--text-sm);
+	}
+
+	.save {
+		display: grid;
+		gap: var(--space-4);
+		max-width: 30rem;
+	}
+
+	h2 {
+		font-size: var(--text-xl);
+	}
+
+	.save form {
+		display: grid;
+		gap: var(--space-4);
+	}
+
+	.retry {
+		justify-self: start;
+	}
+
+	.go {
+		justify-self: start;
+	}
+
+	@media (min-width: 64rem) {
+		.workspace {
+			grid-template-columns: minmax(0, 1fr) 26rem;
+			grid-template-areas: 'stage export' 'save export' 'saved export';
+			column-gap: var(--space-12);
+			align-items: start;
+		}
+
+		/* O painel acompanha a rolagem: o texto e as cópias ficam sempre ao lado
+		   da montagem. Se for mais alto que a tela, rola por dentro. */
+		.export-panel {
+			position: sticky;
+			top: var(--space-4);
+			max-height: calc(100dvh - 2 * var(--space-4));
+			overflow-y: auto;
+		}
+	}
+
+	@media (min-width: 48rem) {
+		.body {
+			width: min(100%, 17rem);
+		}
+
+		.stage {
+			grid-template-columns: minmax(0, 20rem) minmax(0, 17rem);
+			justify-content: start;
+			gap: var(--space-8);
+			/* A foto tem a altura do mapa do corpo: cabeça, tronco, pernas e pés
+			   ficam na altura dos quadradinhos correspondentes */
+			align-items: stretch;
+		}
+
+		.photo {
+			grid-template-rows: minmax(0, 1fr) auto;
+		}
+
+		.main-photo {
+			height: 100%;
+			max-height: none;
+		}
+	}
+</style>

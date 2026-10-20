@@ -100,7 +100,7 @@
 			<TextField
 				label="Nome de usuário"
 				name="username"
-				autocomplete="username"
+				autocomplete="nickname"
 				autocapitalize="none"
 				spellcheck="false"
 				required
@@ -114,11 +114,13 @@
 				oninput={() => handleInput('username')}
 			/>
 
+			<!-- O login é por e-mail: o gerenciador de senhas guarda o e-mail (autocomplete
+			     "username"), e o nome de usuário é só o apelido (nickname) -->
 			<TextField
 				label="E-mail"
 				name="email"
 				type="email"
-				autocomplete="email"
+				autocomplete="username"
 				inputmode="email"
 				autocapitalize="none"
 				spellcheck="false"

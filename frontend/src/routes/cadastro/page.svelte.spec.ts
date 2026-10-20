@@ -165,6 +165,17 @@ describe('cadastro', () => {
 			.toBeVisible();
 	});
 
+	it('o gerenciador de senhas guarda o e-mail (o login), não o nome de usuário', async () => {
+		await expect.element(page.getByLabelText('E-mail')).toHaveAttribute('autocomplete', 'username');
+		await expect
+			.element(page.getByLabelText('Nome de usuário'))
+			.toHaveAttribute('autocomplete', 'nickname');
+		// `new-password` faz o aparelho oferecer uma senha forte e guardá-la
+		await expect
+			.element(page.getByLabelText('Senha', { exact: true }))
+			.toHaveAttribute('autocomplete', 'new-password');
+	});
+
 	it('mostra e oculta a senha', async () => {
 		const password = page.getByLabelText('Senha', { exact: true });
 		const toggle = page.getByRole('button', { name: 'Mostrar senha' });

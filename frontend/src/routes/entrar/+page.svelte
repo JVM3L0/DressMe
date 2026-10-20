@@ -77,11 +77,12 @@
 
 <FormPage title="Entrar" lead="Continue de onde parou: suas fotos e o seu guarda-roupa.">
 	<form novalidate onsubmit={handleSubmit}>
+		<!-- O login é por e-mail: é ele que o gerenciador de senhas guarda e preenche -->
 		<TextField
 			label="E-mail"
 			name="email"
 			type="email"
-			autocomplete="email"
+			autocomplete="username"
 			inputmode="email"
 			autocapitalize="none"
 			spellcheck="false"

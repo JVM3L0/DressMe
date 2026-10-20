@@ -114,6 +114,13 @@ describe('login', () => {
 		await expect.element(page.getByRole('button', { name: 'Entrar' })).toBeEnabled();
 	});
 
+	it('declara o e-mail como login e a senha como atual, para o gerenciador de senhas', async () => {
+		await expect.element(page.getByLabelText('E-mail')).toHaveAttribute('autocomplete', 'username');
+		await expect
+			.element(page.getByLabelText('Senha', { exact: true }))
+			.toHaveAttribute('autocomplete', 'current-password');
+	});
+
 	it('usa o preenchimento automático de senha salva', async () => {
 		await expect
 			.element(page.getByLabelText('Senha', { exact: true }))

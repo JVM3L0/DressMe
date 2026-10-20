@@ -143,6 +143,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outfits/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Outfits */
+        get: operations["list_outfits_outfits__get"];
+        put?: never;
+        /**
+         * Create Outfit
+         * @description Salva um conjunto com as peças do guarda-roupa. As peças são
+         *     conferidas: precisam ser do usuário, uma por categoria.
+         */
+        post: operations["create_outfit_outfits__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outfits/{uid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Outfit
+         * @description Troca o nome e as peças do conjunto
+         */
+        put: operations["update_outfit_outfits__uid__put"];
+        post?: never;
+        /**
+         * Delete Outfit
+         * @description Exclui o conjunto, mas não as peças
+         */
+        delete: operations["delete_outfit_outfits__uid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/photos/": {
         parameters: {
             query?: never;
@@ -330,6 +376,37 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** OutfitInput */
+        OutfitInput: {
+            /**
+             * Garment Ids
+             * @description Peças do conjunto: no máximo uma por categoria (até 4 acessórios), e uma peça única não combina com parte de cima ou de baixo.
+             */
+            garment_ids: string[];
+            /**
+             * Name
+             * @description Nome do conjunto.
+             * @example Look de sexta
+             */
+            name: string;
+        };
+        /** OutfitPublic */
+        OutfitPublic: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Garment Ids */
+            garment_ids: string[];
+            /** Name */
+            name: string;
+            /**
+             * Uid
+             * Format: uuid
+             */
+            uid: string;
         };
         /** PhotoPublic */
         PhotoPublic: {
@@ -725,6 +802,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthcheckResponse"];
+                };
+            };
+        };
+    };
+    list_outfits_outfits__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutfitPublic"][];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    create_outfit_outfits__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutfitInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutfitPublic"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos, ou uma composição que não vale (peça que não é do usuário, categoria repetida, peça única com parte de cima ou de baixo). Neste caso, `detail` é um texto e `code` diz o motivo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_outfit_outfits__uid__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutfitInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutfitPublic"];
+                };
+            };
+            /** @description Sem sessão ou com sessão expirada. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Não existe, ou pertence a outro usuário. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados inválidos, ou uma composição que não vale (peça que não é do usuário, categoria repetida, peça única com parte de cima ou de baixo). Neste caso, `detail` é um texto e `code` diz o motivo. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_outfit_outfits__uid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem sessão ou com sessão expirada. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Não existe, ou pertence a outro usuário. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

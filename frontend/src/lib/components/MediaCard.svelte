@@ -29,11 +29,11 @@
 		</figcaption>
 	</figure>
 
-	<div class="actions">
+	<div class="button-group">
 		{#if confirming}
 			<button
 				type="button"
-				class="danger"
+				class="button danger"
 				disabled={busy}
 				onclick={() => {
 					confirming = false;
@@ -42,9 +42,16 @@
 			>
 				Excluir mesmo
 			</button>
-			<button type="button" class="plain" onclick={() => (confirming = false)}>Cancelar</button>
+			<button type="button" class="button secondary" onclick={() => (confirming = false)}
+				>Cancelar</button
+			>
 		{:else}
-			<button type="button" class="plain" disabled={busy} onclick={() => (confirming = true)}>
+			<button
+				type="button"
+				class="button secondary"
+				disabled={busy}
+				onclick={() => (confirming = true)}
+			>
 				Excluir <span class="visually-hidden">{subject}</span>
 			</button>
 		{/if}
@@ -98,35 +105,6 @@
 	.detail {
 		font-size: var(--text-sm);
 		color: var(--color-text-muted);
-	}
-
-	.actions {
-		display: flex;
-		gap: var(--space-2);
-	}
-
-	button {
-		min-height: 2.75rem; /* alvo de toque de 44px */
-		padding: var(--space-1) var(--space-3);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text);
-		font: inherit;
-		font-size: var(--text-sm);
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	button:disabled {
-		cursor: progress;
-		opacity: 0.6;
-	}
-
-	.danger {
-		border-color: var(--color-danger);
-		background: var(--color-danger);
-		color: var(--color-bg);
 	}
 
 	[aria-busy='true'] img {

@@ -13,7 +13,8 @@ Resolvidos:
 - DT-08: grafia do username;
 - DT-09: CSP;
 - DT-12: imagens sem miniaturas ([ADR-0007](adr/0007-categorias-de-pecas-e-entrega-das-imagens.md));
-- DT-13: testes de ponta a ponta no CI (`.github/workflows/e2e.yml`).
+- DT-13: testes de ponta a ponta no CI (`.github/workflows/e2e.yml`);
+- DT-14: menu ruim no celular (barra de navegação fixa embaixo, `SiteNav`).
 
 **Prioridade:** 🔴 alta (risco de segurança ou indisponibilidade) · 🟡 média · 🟢 baixa
 

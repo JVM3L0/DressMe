@@ -43,6 +43,14 @@ class SQLAlchemyGarmentRepository:
         )
         return _to_entity(model) if model else None
 
+    async def list_by_ids(self, uids: list[UUID], owner_id: UUID) -> list[Garment]:
+        if not uids:
+            return []
+        stmt = select(GarmentOrm).where(
+            GarmentOrm.uid.in_(uids), GarmentOrm.owner_id == owner_id
+        )
+        return [_to_entity(model) for model in await self.session.scalars(stmt)]
+
     async def delete(self, garment: Garment) -> None:
         await self.session.execute(
             delete(GarmentOrm).where(GarmentOrm.uid == garment.uid)

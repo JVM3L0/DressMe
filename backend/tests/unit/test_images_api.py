@@ -123,6 +123,20 @@ class TestPhotosApi:
         assert storage.path(image.key).exists()
         assert storage.path(image.thumbnail_key).exists()
 
+    @pytest.mark.parametrize("suffix", ["image", "thumbnail"])
+    async def test_record_without_file_answers_404_instead_of_500(
+        self, client, photos, storage, suffix
+    ):
+        uid = (await client.post("/photos/", files=upload(jpeg_bytes()))).json()["uid"]
+        image = photos.items[0].image
+        storage.path(image.key).unlink()
+        storage.path(image.thumbnail_key).unlink()
+
+        response = await client.get(f"/photos/{uid}/{suffix}")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json() == {"detail": "Não encontrado."}
+
     async def test_thumbnail_behind_nginx_points_to_the_thumbnail_file(
         self, client, photos, monkeypatch
     ):
