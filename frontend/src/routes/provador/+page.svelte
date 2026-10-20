@@ -244,16 +244,18 @@
 					<!-- Mapa do corpo: cabeça, tronco (agasalho e parte de cima), pernas e pés -->
 					<div class="map" role="group" aria-label="Peças do conjunto, na posição do corpo">
 						{#each slots as category (category)}
-							<div class={['cell', category, selection.one_piece && 'covered']}>
+							<div class={['cell', category]}>
 								<OutfitSlot
 									{category}
 									piece={selection[category]}
-									wide={category === 'one_piece'}
+									tall={category === 'one_piece'}
 									onpick={() => (picking = category)}
 									onclear={() => handleClear(category)}
 								/>
 							</div>
 						{/each}
+						<!-- Dá altura à linha das pernas quando a peça única (vertical) ocupa o lugar dela -->
+						{#if selection.one_piece}<div class="cell spacer" aria-hidden="true"></div>{/if}
 					</div>
 					{#if !selection.one_piece}
 						<button type="button" class="one-piece" onclick={() => (picking = 'one_piece')}>
@@ -421,11 +423,12 @@
 		justify-self: center;
 	}
 
-	/* Mapa do corpo: os quadradinhos ficam onde a peça é vestida. Cabeça, pernas e
-	   pés são um quadrado no meio; o tronco tem dois (agasalho e parte de cima) */
+	/* Mapa do corpo: os quadradinhos ficam onde a peça é vestida. A grade tem 4
+	   colunas e cada quadradinho ocupa 2, o que permite centralizar a cabeça, as
+	   pernas e os pés, e pôr dois quadradinhos lado a lado no tronco */
 	.map {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: var(--space-3);
 		width: 100%;
 	}
@@ -434,25 +437,34 @@
 		min-width: 0;
 	}
 
-	.cell.accessory,
-	.cell.bottom,
-	.cell.footwear,
-	.cell.one_piece {
-		grid-column: 1 / -1;
+	.cell.accessory {
+		grid-area: 1 / 2 / 2 / 4;
 	}
 
-	.cell.accessory,
-	.cell.bottom,
+	.cell.outerwear {
+		grid-area: 2 / 1 / 3 / 3;
+	}
+
+	.cell.top {
+		grid-area: 2 / 3 / 3 / 5;
+	}
+
+	.cell.bottom {
+		grid-area: 3 / 2 / 4 / 4;
+	}
+
 	.cell.footwear {
-		width: calc(50% - var(--space-3) / 2);
-		justify-self: center;
+		grid-area: 4 / 2 / 5 / 4;
 	}
 
-	/* Com a peça única, o agasalho fica sozinho no tronco, centralizado */
-	.cell.outerwear.covered {
-		grid-column: 1 / -1;
-		width: calc(50% - var(--space-3) / 2);
-		justify-self: center;
+	/* Peça única: vertical, ao lado do agasalho, da altura do tronco e das pernas */
+	.cell.one_piece {
+		grid-area: 2 / 3 / 4 / 5;
+	}
+
+	.cell.spacer {
+		grid-area: 3 / 1 / 4 / 3;
+		aspect-ratio: 1;
 	}
 
 	.one-piece {

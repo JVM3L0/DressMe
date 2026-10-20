@@ -7,7 +7,7 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
 ### Adicionado
 
 - Provador (`/provador`) e conjuntos de peças ([ADR-0008](docs/adr/0008-conjuntos-e-ponte-para-ia-externa.md)):
-  - a foto ao lado de um mapa do corpo, com um quadradinho para cada categoria na posição em que a peça é vestida (acessório na cabeça, agasalho e parte de cima no tronco, parte de baixo nas pernas, calçado nos pés); a peça única ocupa o lugar do tronco e das pernas, e o app avisa o que sairá do conjunto antes de trocar;
+  - a foto ao lado de um mapa do corpo, com um quadradinho para cada categoria na posição em que a peça é vestida (acessório na cabeça, agasalho e parte de cima no tronco, parte de baixo nas pernas, calçado nos pés); a peça única fica na vertical, ocupando a altura do tronco e das pernas, e o app avisa o que sairá do conjunto antes de trocar;
   - conjuntos salvos com nome (API `POST`/`GET /outfits/`, `PUT` e `DELETE /outfits/{id}`): usar, atualizar, salvar como novo e excluir. Excluir um conjunto não exclui as peças, e excluir uma peça a tira dos conjuntos;
   - o backend confere a composição: peças do usuário, uma por categoria, e peça única sem parte de cima ou de baixo.
 - Levar o conjunto para uma IA de imagens, sem o VirtualFit enviar nada a ninguém:

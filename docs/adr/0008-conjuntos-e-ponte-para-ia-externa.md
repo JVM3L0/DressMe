@@ -17,7 +17,7 @@ O ADR-0001 previa que o usuário posicionasse as peças sobre a própria foto no
    - A **foto não faz parte do conjunto**: o usuário a escolhe na hora de usar. Assim, o mesmo conjunto serve para qualquer foto.
 2. **O provador é um mapa do corpo**: cada categoria tem um quadradinho **na posição em que a peça é vestida**, ao lado da foto (no celular, abaixo dela).
    - Acessório na cabeça (em cima, no meio), agasalho e parte de cima lado a lado no tronco, parte de baixo nas pernas e calçado nos pés, em colunas de dois quadrados. No computador, a foto tem a altura do mapa, então as zonas do corpo ficam na altura dos quadradinhos.
-   - A **peça única** (vestido, macacão) é uma opção abaixo do mapa. Quando escolhida, ocupa o lugar do tronco e das pernas, e a parte de cima e a de baixo somem.
+   - A **peça única** (vestido, macacão) é uma opção abaixo do mapa. Quando escolhida, vira um quadradinho **vertical** (a altura do tronco e das pernas juntos), ao lado do agasalho, e a parte de cima e a de baixo somem.
    - Sem arrastar, girar ou redimensionar.
 3. **A imagem das roupas é montada no navegador** (canvas): as peças, em tamanho inteiro, numa grade de células quadradas de 512 px, na ordem do corpo, sobre fundo branco liso, sem texto. A grade é de 1×1, 2×1, 2×2 ou 3×2, conforme o número de peças. Nada é enviado ao servidor.
 4. **O texto para a IA é gerado por regras, no frontend**, em uma função pura (`src/lib/outfit/prompt.ts`), em **inglês** (as IAs de imagem costumam entendê-lo melhor):

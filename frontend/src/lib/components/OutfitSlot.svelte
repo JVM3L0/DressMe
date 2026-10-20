@@ -6,19 +6,19 @@
 	interface Props {
 		category: GarmentCategory;
 		piece?: Piece;
-		/** Ocupa a largura toda (a peça única, que fica no lugar de cima e de baixo) */
-		wide?: boolean;
+		/** Vertical: ocupa a altura de dois quadradinhos (a peça única, no lugar do tronco e das pernas) */
+		tall?: boolean;
 		onpick: () => void;
 		onclear: () => void;
 	}
 
-	let { category, piece, wide = false, onpick, onclear }: Props = $props();
+	let { category, piece, tall = false, onpick, onclear }: Props = $props();
 
 	const label = $derived(categoryLabel(category));
 	const title = $derived(piece?.name || label);
 </script>
 
-<div class="slot" class:wide class:filled={piece}>
+<div class="slot" class:tall class:filled={piece}>
 	<button
 		type="button"
 		class="face"
@@ -67,8 +67,14 @@
 		overflow: hidden;
 	}
 
-	.wide .face {
-		aspect-ratio: 2 / 1;
+	/* Preenche a altura que a grade der (dois quadradinhos, com o espaço entre eles) */
+	.tall {
+		height: 100%;
+	}
+
+	.tall .face {
+		aspect-ratio: auto;
+		height: 100%;
 	}
 
 	.face:hover {
