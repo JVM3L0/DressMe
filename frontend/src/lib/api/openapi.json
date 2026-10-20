@@ -1,6 +1,111 @@
 {
   "components": {
     "schemas": {
+      "Body_add_garment_garments__post": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/GarmentCategory"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Imagem JPEG ou PNG de até 10 MB.",
+            "title": "File",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 60,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "required": [
+          "file",
+          "category"
+        ],
+        "title": "Body_add_garment_garments__post",
+        "type": "object"
+      },
+      "Body_upload_photo_photos__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Imagem JPEG ou PNG de até 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_photo_photos__post",
+        "type": "object"
+      },
+      "GarmentCategory": {
+        "description": "Categoria da peça pela região do corpo, que define a camada e a posição\ninicial no provador. Os rótulos em português ficam no frontend.",
+        "enum": [
+          "top",
+          "outerwear",
+          "bottom",
+          "one_piece",
+          "footwear",
+          "accessory"
+        ],
+        "title": "GarmentCategory",
+        "type": "string"
+      },
+      "GarmentPublic": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/GarmentCategory"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "uid": {
+            "format": "uuid",
+            "title": "Uid",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "width",
+          "height",
+          "uid",
+          "category",
+          "name",
+          "created_at"
+        ],
+        "title": "GarmentPublic",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -55,6 +160,36 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "PhotoPublic": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "uid": {
+            "format": "uuid",
+            "title": "Uid",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "width",
+          "height",
+          "uid",
+          "created_at"
+        ],
+        "title": "PhotoPublic",
         "type": "object"
       },
       "UserCreate": {
@@ -243,6 +378,223 @@
         ]
       }
     },
+    "/garments/": {
+      "get": {
+        "operationId": "list_garments_garments__get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GarmentCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GarmentPublic"
+                  },
+                  "title": "Response List Garments Garments  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "List Garments",
+        "tags": [
+          "garments"
+        ]
+      },
+      "post": {
+        "description": "Adiciona uma peça ao guarda-roupa. PNG com fundo transparente fica\nmelhor no provador.",
+        "operationId": "add_garment_garments__post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_garment_garments__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GarmentPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "413": {
+            "description": "A imagem passa de 10 MB."
+          },
+          "415": {
+            "description": "O arquivo não é uma imagem JPEG ou PNG válida."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Limite de envios por IP atingido."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Add Garment",
+        "tags": [
+          "garments"
+        ]
+      }
+    },
+    "/garments/{uid}": {
+      "delete": {
+        "operationId": "delete_garment_garments__uid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Delete Garment",
+        "tags": [
+          "garments"
+        ]
+      }
+    },
+    "/garments/{uid}/image": {
+      "get": {
+        "description": "Arquivo da peça, só para o dono",
+        "operationId": "get_garment_image_garments__uid__image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {},
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Garment Image",
+        "tags": [
+          "garments"
+        ]
+      }
+    },
     "/healthcheck/": {
       "get": {
         "operationId": "healthcheck_healthcheck__get",
@@ -261,6 +613,195 @@
         "summary": "Healthcheck",
         "tags": [
           "healthcheck"
+        ]
+      }
+    },
+    "/photos/": {
+      "get": {
+        "operationId": "list_photos_photos__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoPublic"
+                  },
+                  "title": "Response List Photos Photos  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "List Photos",
+        "tags": [
+          "photos"
+        ]
+      },
+      "post": {
+        "description": "Envia uma foto do usuário. A imagem é regravada sem metadados (EXIF).",
+        "operationId": "upload_photo_photos__post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_photo_photos__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "413": {
+            "description": "A imagem passa de 10 MB."
+          },
+          "415": {
+            "description": "O arquivo não é uma imagem JPEG ou PNG válida."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Limite de envios por IP atingido."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Upload Photo",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos/{uid}": {
+      "delete": {
+        "operationId": "delete_photo_photos__uid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Delete Photo",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos/{uid}/image": {
+      "get": {
+        "description": "Arquivo da foto, só para o dono",
+        "operationId": "get_photo_image_photos__uid__image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {},
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get Photo Image",
+        "tags": [
+          "photos"
         ]
       }
     },

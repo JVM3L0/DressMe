@@ -6,8 +6,8 @@
 	import '../app.css';
 
 	import favicon from '#lib/assets/favicon.svg';
-	import AccountLink from '#lib/components/AccountLink.svelte';
 	import ApiStatus from '#lib/components/ApiStatus.svelte';
+	import SiteNav from '#lib/components/SiteNav.svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
 	import { loadSession } from '#lib/session.svelte.ts';
 
@@ -33,10 +33,8 @@
 
 <header class="site-header">
 	<a class="wordmark" href={resolve('/')}>VirtualFit</a>
-	<nav class="actions" aria-label="Conta e preferências">
-		<AccountLink />
-		<ThemeToggle />
-	</nav>
+	<div class="nav-slot"><SiteNav /></div>
+	<div class="toggle-slot"><ThemeToggle /></div>
 </header>
 
 <main id="conteudo" class="page">
@@ -68,16 +66,40 @@
 
 	.site-header {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-4);
-		padding-block: var(--space-4);
+		gap: 0 var(--space-4);
+		padding-block: var(--space-2);
 	}
 
-	.actions {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
+	.wordmark {
+		margin-right: auto;
+	}
+
+	/* No celular, os links descem para uma segunda linha, para caber todos */
+	.toggle-slot {
+		order: 2;
+	}
+
+	.nav-slot {
+		order: 3;
+		flex-basis: 100%;
+	}
+
+	/* Sem links (ainda sem resposta da API), a linha não ocupa espaço */
+	.nav-slot:empty {
+		display: none;
+	}
+
+	@media (min-width: 48rem) {
+		.nav-slot {
+			order: 1;
+			flex-basis: auto;
+		}
+
+		.toggle-slot {
+			order: 2;
+		}
 	}
 
 	.wordmark {
