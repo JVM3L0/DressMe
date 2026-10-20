@@ -230,7 +230,10 @@ O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pr
 | GET, POST | `/garments/` | Lista as peças (`?category=` filtra) e adiciona uma (`file`, `category` e `name` opcional) |
 | GET, DELETE | `/garments/{id}/image`, `/garments/{id}/thumbnail`, `/garments/{id}` | Imagem, miniatura e exclusão |
 
-Categorias das peças: `top`, `outerwear`, `bottom`, `one_piece`, `footwear` e `accessory` ([ADR-0007](docs/adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)). Todas as rotas de fotos e peças exigem sessão.
+| GET, POST | `/outfits/` | Lista os conjuntos do usuário e salva um novo (`name` e `garment_ids`; `422` se a composição não valer) |
+| PUT, DELETE | `/outfits/{id}` | Troca o nome e as peças do conjunto, ou o exclui (as peças ficam) |
+
+Categorias das peças: `top`, `outerwear`, `bottom`, `one_piece`, `footwear` e `accessory` ([ADR-0007](docs/adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)). Um conjunto tem no máximo uma peça por categoria, e uma peça única não combina com parte de cima ou de baixo ([ADR-0008](docs/adr/0008-conjuntos-e-ponte-para-ia-externa.md)). Todas as rotas de fotos, peças e conjuntos exigem sessão.
 
 Regras do cadastro:
 

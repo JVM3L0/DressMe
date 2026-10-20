@@ -2,6 +2,27 @@
 
 As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (veja o [ADR-0005](docs/adr/0005-versionamento-semantico-por-branch.md)).
 
+## [0.5.0] - 2026-10-20
+
+### Adicionado
+
+- Provador (`/provador`) e conjuntos de peças ([ADR-0008](docs/adr/0008-conjuntos-e-ponte-para-ia-externa.md)):
+  - a foto de um lado e um quadradinho para cada categoria (acessório, agasalho, parte de cima, parte de baixo, peça única e calçado); a peça única ocupa o lugar da parte de cima e da de baixo, e o app avisa o que sairá do conjunto antes de trocar;
+  - conjuntos salvos com nome (API `POST`/`GET /outfits/`, `PUT` e `DELETE /outfits/{id}`): usar, atualizar, salvar como novo e excluir. Excluir um conjunto não exclui as peças, e excluir uma peça a tira dos conjuntos;
+  - o backend confere a composição: peças do usuário, uma por categoria, e peça única sem parte de cima ou de baixo.
+- Levar o conjunto para uma IA de imagens, sem o VirtualFit enviar nada a ninguém:
+  - a imagem das roupas é montada no navegador, numa grade de quadradinhos em ordem do corpo;
+  - copiar a foto e copiar a imagem das roupas (PNG) para a área de transferência, e baixar as duas imagens (em contexto seguro; em HTTP só o download);
+  - texto em inglês gerado por regras a partir das peças (categoria e nome), com a opção de manter o fundo e um pedido extra, para copiar e colar na IA;
+  - "Compartilhar tudo" (foto, roupas e texto) em aparelhos que suportam.
+- Link "Provador" no cabeçalho.
+- O teste de ponta a ponta cobre o provador, com a área de transferência de verdade.
+
+### Alterado
+
+- O item "prova virtual manual com arrastar, redimensionar e girar" do ADR-0001 foi substituído pelo ADR-0008.
+- A etapa "Monte o conjunto" substitui "Prove sem trocar de roupa" na página inicial.
+
 ## [0.4.0] - 2026-10-20
 
 ### Adicionado
@@ -99,6 +120,7 @@ Primeira versão da API, consolidando o trabalho até a reorganização em monor
 - Valores das queries ocultos nos logs, e erros 422 sem ecoar a entrada (para não expor senhas).
 - Postgres e API acessíveis apenas por `127.0.0.1` no compose, e credenciais no `.env`.
 
+[0.5.0]: https://github.com/JVM3L0/DressMe/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JVM3L0/DressMe/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/JVM3L0/DressMe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JVM3L0/DressMe/compare/v0.1.0...v0.2.0

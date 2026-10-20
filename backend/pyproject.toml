@@ -1,7 +1,7 @@
 [project]
 name = "dressme"
 # Versão única do produto (monorepo); manter igual a frontend/package.json
-version = "0.4.0"
+version = "0.5.0"
 description = "API da prova de conceito do VirtualFit"
 requires-python = ">=3.13"
 dependencies = [
