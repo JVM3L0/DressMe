@@ -1,23 +1,36 @@
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import APIKeyCookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from application.interfaces.garment_repository import GarmentRepository
+from application.interfaces.photo_repository import PhotoRepository
 from application.interfaces.user_repository import UserRepository
+from application.services.image_upload import ImageUploader
 from application.use_cases.authenticate_user import AuthenticateUserUseCase
 from application.use_cases.create_user import CreateUserUseCase
 from application.use_cases.get_current_user import GetCurrentUserUseCase
 from config import settings
 from domain.entities.user import User
+from domain.ports.image_processor import ImageProcessor
 from domain.ports.password_hasher import PasswordHasher
 from domain.ports.token_service import TokenService
 from infrastructure.auth.bcrypt_hasher import BcryptHasher, make_dummy_hash
 from infrastructure.auth.jwt_service import JWTService
+from infrastructure.images.pillow_processor import PillowImageProcessor
 from infrastructure.persistence.database import get_db_session
+from infrastructure.repositories.sqlalchemy_garment_repository import (
+    SQLAlchemyGarmentRepository,
+)
+from infrastructure.repositories.sqlalchemy_photo_repository import (
+    SQLAlchemyPhotoRepository,
+)
 from infrastructure.repositories.sqlalchemy_user_repository import (
     SQLAlchemyUserRepository,
 )
+from infrastructure.storage.local_image_storage import LocalImageStorage
 
 SESSION_COOKIE = "virtualfit_session"
 
@@ -111,3 +124,44 @@ async def get_current_user(
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
+# Imagens (ADR-0003). O armazenamento é o local, e não o protocolo, porque a
+# entrega dos arquivos (media.py) precisa do caminho em disco.
+_image_storage = LocalImageStorage(Path(settings.MEDIA_ROOT))
+_image_processor = PillowImageProcessor()
+
+
+def get_image_storage() -> LocalImageStorage:
+    return _image_storage
+
+
+def get_image_processor() -> ImageProcessor:
+    return _image_processor
+
+
+ImageStorageDep = Annotated[LocalImageStorage, Depends(get_image_storage)]
+
+
+def get_image_uploader(
+    storage: ImageStorageDep,
+    processor: Annotated[ImageProcessor, Depends(get_image_processor)],
+) -> ImageUploader:
+    return ImageUploader(processor=processor, storage=storage)
+
+
+ImageUploaderDep = Annotated[ImageUploader, Depends(get_image_uploader)]
+
+
+def get_photo_repository(session: SessionDep) -> PhotoRepository:
+    return SQLAlchemyPhotoRepository(session)
+
+
+PhotoRepositoryDep = Annotated[PhotoRepository, Depends(get_photo_repository)]
+
+
+def get_garment_repository(session: SessionDep) -> GarmentRepository:
+    return SQLAlchemyGarmentRepository(session)
+
+
+GarmentRepositoryDep = Annotated[GarmentRepository, Depends(get_garment_repository)]

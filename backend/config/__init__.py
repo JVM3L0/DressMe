@@ -16,6 +16,8 @@ class Settings(Dynaconf):
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     AUTH_COOKIE_SECURE: bool
+    MEDIA_ROOT: str
+    MEDIA_ACCEL_REDIRECT: bool
 
 
 settings: Settings = Dynaconf(
@@ -47,6 +49,12 @@ settings: Settings = Dynaconf(
         Validator("RATE_LIMIT_STORAGE_URI", default="memory://"),
         Validator("RATE_LIMIT_SIGNUP", default="5/minute"),
         Validator("RATE_LIMIT_LOGIN", default="10/minute"),
+        Validator("RATE_LIMIT_UPLOAD", default="30/minute"),
+        # Imagens (ADR-0003): pasta dos arquivos e forma de entrega. Atrás do
+        # nginx, a API só autoriza e o nginx entrega (X-Accel-Redirect); sem
+        # ele (desenvolvimento local), a própria API envia o arquivo.
+        Validator("MEDIA_ROOT", default="media"),
+        Validator("MEDIA_ACCEL_REDIRECT", default=False, is_type_of=bool),
     ],
 )  # ty:ignore[invalid-assignment]
 

@@ -27,6 +27,27 @@ async def not_authenticated_handler(request: Request, exc: Exception) -> JSONRes
     )
 
 
+async def resource_not_found_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "Não encontrado."},
+    )
+
+
+async def image_too_large_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+        content={"detail": "A imagem passa de 10 MB."},
+    )
+
+
+async def invalid_image_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        content={"detail": "Envie uma imagem JPEG ou PNG."},
+    )
+
+
 async def request_validation_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:

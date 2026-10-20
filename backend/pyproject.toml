@@ -1,7 +1,7 @@
 [project]
 name = "dressme"
 # Versão única do produto (monorepo); manter igual a frontend/package.json
-version = "0.3.0"
+version = "0.4.0"
 description = "API da prova de conceito do VirtualFit"
 requires-python = ">=3.13"
 dependencies = [
@@ -14,6 +14,7 @@ dependencies = [
     "fastapi[standard-no-fastapi-cloud-cli]>=0.149.0",
     "limits[redis]>=5.8.0",
     "pendulum>=3.2.0",
+    "pillow>=12",
     "pyjwt>=2.15.1",
     "slowapi>=0.1.10",
     "sqlalchemy[asyncio]>=2.0.46",
