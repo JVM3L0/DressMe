@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 
 from config import settings
 from domain.entities.image import MAX_IMAGE_BYTES, StoredImage
+from domain.exceptions.common import ResourceNotFoundError
 from domain.exceptions.image import ImageTooLargeError
 from infrastructure.storage.local_image_storage import LocalImageStorage
 
@@ -43,6 +44,9 @@ def image_response(
         # bytes pelo Python
         headers["X-Accel-Redirect"] = ACCEL_REDIRECT_PREFIX + key
         return Response(media_type=image.content_type, headers=headers)
-    return FileResponse(
-        storage.path(key), media_type=image.content_type, headers=headers
-    )
+    path = storage.path(key)
+    if not path.is_file():
+        # Registro sem arquivo (disco restaurado pela metade, arquivo apagado à
+        # mão): sem esta checagem o FileResponse levantaria um erro 500
+        raise ResourceNotFoundError()
+    return FileResponse(path, media_type=image.content_type, headers=headers)

@@ -18,6 +18,10 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
 - Link "Provador" no cabeçalho.
 - O teste de ponta a ponta cobre o provador, com a área de transferência de verdade.
 
+### Corrigido
+
+- Um registro de imagem sem o arquivo no disco (arquivo apagado, disco restaurado pela metade) passa a responder `404`, e não um erro `500`; o provador explica que a peça (ou foto) deve ser excluída e enviada de novo.
+
 ### Alterado
 
 - O item "prova virtual manual com arrastar, redimensionar e girar" do ADR-0001 foi substituído pelo ADR-0008.

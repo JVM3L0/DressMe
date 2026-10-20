@@ -164,6 +164,22 @@ describe('OutfitOutput: imagens', () => {
 	});
 });
 
+describe('OutfitOutput: imagem sem arquivo', () => {
+	it('explica o que fazer quando o arquivo de uma peça não existe mais', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response(null, { status: 404 }))
+		);
+		await render(OutfitOutput, { pieces: PIECES, photoUid: 'p1' });
+
+		await page.getByRole('button', { name: 'Copiar roupas' }).click();
+
+		await expect
+			.element(page.getByRole('alert'))
+			.toHaveTextContent('O arquivo de uma das imagens não existe mais. Exclua essa peça');
+	});
+});
+
 describe('OutfitOutput: estados', () => {
 	it('sem foto, só o passo da foto fica desabilitado', async () => {
 		await render(OutfitOutput, { pieces: PIECES });

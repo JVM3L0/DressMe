@@ -7,6 +7,11 @@ import type { Piece } from './slots.ts';
 /** Baixa uma imagem da API (mesma origem, com o cookie da sessão) */
 export async function fetchImage(url: string): Promise<Blob> {
 	const response = await fetch(url);
+	if (response.status === 404) {
+		throw new Error(
+			'O arquivo de uma das imagens não existe mais. Exclua essa peça (ou foto) e envie de novo.'
+		);
+	}
 	if (!response.ok) throw new Error('Não foi possível carregar a imagem. Tente de novo.');
 	return response.blob();
 }
