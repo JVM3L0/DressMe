@@ -20,12 +20,16 @@ src/
 ├── csp.spec.ts            # confere a CSP de csp.config.ts
 ├── lib/
 │   ├── api/               # cliente tipado, schema gerado e tradução de erros da API
-│   ├── components/        # componentes reutilizáveis (TextField, PasswordField, HangTag, FormPage…)
+│   ├── components/        # componentes reutilizáveis (TextField, ImagePicker, MediaCard, HangTag…)
 │   ├── login/             # validação e envio do login
+│   ├── media/             # validação das imagens e tradução das respostas da API em resultados
+│   ├── photos/            # fotos do usuário (listar, enviar, excluir)
 │   ├── signup/            # regras de validação e envio do cadastro
+│   ├── wardrobe/          # peças do guarda-roupa e as 6 categorias
+│   ├── testing/           # apoio aos testes (API simulada por rota)
 │   ├── session.svelte.ts  # sessão do usuário, compartilhada pelas páginas
 │   └── theme.ts           # tema claro/escuro
-└── routes/                # páginas (/, /cadastro, /entrar e /conta)
+└── routes/                # páginas (/, /cadastro, /entrar, /conta, /fotos e /guarda-roupa)
 static/theme-init.js       # aplica o tema salvo antes da primeira pintura
 csp.config.ts              # Content Security Policy das páginas
 ```

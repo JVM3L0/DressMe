@@ -2,6 +2,33 @@
 
 As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (veja o [ADR-0005](docs/adr/0005-versionamento-semantico-por-branch.md)).
 
+## [0.4.0] - 2026-10-20
+
+### Adicionado
+
+- Fotos do usuário e guarda-roupa ([ADR-0007](docs/adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)):
+  - API: `POST` e `GET /photos/`, `GET /photos/{id}/image` e `DELETE /photos/{id}`, e as mesmas rotas em `/garments/`, com o filtro `?category=`;
+  - telas `/fotos` e `/guarda-roupa`, com pré-visualização antes do envio, filtro por categoria com contagem, e confirmação antes de excluir;
+  - seis categorias de peça, pela região do corpo: parte de cima, agasalho, parte de baixo, peça única, calçado e acessório;
+  - links "Fotos", "Guarda-roupa" e "Sua conta" no cabeçalho, para quem está logado.
+- Armazenamento das imagens em disco, num volume `media` do compose. O nginx entrega os arquivos (`X-Accel-Redirect`) depois que a API confere a sessão e o dono, e o endereço `/_media/` não abre direto ([ADR-0003](docs/adr/0003-armazenamento-local-de-imagens-com-nginx.md)).
+- Variáveis `MEDIA_ROOT`, `MEDIA_ACCEL_REDIRECT` e `RATE_LIMIT_UPLOAD`.
+- Débitos técnicos DT-11 (arquivos órfãos ao apagar contas), DT-12 (sem miniaturas) e DT-13 (sem testes de ponta a ponta no CI).
+
+### Alterado
+
+- O limite de corpo no nginx passa de 10 MB para 11 MB (a imagem pode ter 10 MB, e o corpo leva também os campos do formulário).
+- A tela da conta usa o mesmo componente de proteção das novas telas (`RequireSession`).
+
+### Segurança
+
+- Todo envio é validado e regravado: o tipo vem do conteúdo (JPEG ou PNG), e não da extensão; o nome do arquivo é gerado pelo servidor; imagens com mais de 60 megapixels são recusadas; e os metadados EXIF, incluindo a localização GPS, são removidos. A rotação da foto é aplicada antes de descartá-los.
+- A imagem de outro usuário se comporta como se não existisse (`404`), e as imagens têm `Cache-Control: private`.
+
+### Corrigido
+
+- O nome acessível do botão "Excluir" saía sem espaço ("ExcluirCamisa azul"), por causa de como o Svelte trata espaços no começo de um elemento.
+
 ## [0.3.0] - 2026-10-19
 
 ### Adicionado
@@ -70,6 +97,7 @@ Primeira versão da API, consolidando o trabalho até a reorganização em monor
 - Valores das queries ocultos nos logs, e erros 422 sem ecoar a entrada (para não expor senhas).
 - Postgres e API acessíveis apenas por `127.0.0.1` no compose, e credenciais no `.env`.
 
+[0.4.0]: https://github.com/JVM3L0/DressMe/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/JVM3L0/DressMe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JVM3L0/DressMe/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/JVM3L0/DressMe/releases/tag/v0.1.0
