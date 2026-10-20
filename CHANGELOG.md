@@ -13,7 +13,9 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
   - links "Fotos", "Guarda-roupa" e "Sua conta" no cabeçalho, para quem está logado.
 - Armazenamento das imagens em disco, num volume `media` do compose. O nginx entrega os arquivos (`X-Accel-Redirect`) depois que a API confere a sessão e o dono, e o endereço `/_media/` não abre direto ([ADR-0003](docs/adr/0003-armazenamento-local-de-imagens-com-nginx.md)).
 - Variáveis `MEDIA_ROOT`, `MEDIA_ACCEL_REDIRECT` e `RATE_LIMIT_UPLOAD`.
-- Débitos técnicos DT-11 (arquivos órfãos ao apagar contas), DT-12 (sem miniaturas) e DT-13 (sem testes de ponta a ponta no CI).
+- Miniaturas (DT-12): cada envio gera o original, reduzido a 2.048 px no lado maior, e uma miniatura de 480 px (`GET .../{id}/thumbnail`). As grades usam a miniatura, e a imagem inteira fica para o provador.
+- Teste de ponta a ponta (DT-13): `npm run e2e` roda o fluxo principal num navegador real, contra o ambiente completo (cadastro, login, envio, EXIF removido, imagem privada, exclusão e saída), e o workflow `e2e.yml` o executa no CI. Falha com qualquer erro de console, de CSP ou de rede inesperado.
+- Débito técnico DT-11 (arquivos órfãos ao apagar contas).
 
 ### Alterado
 

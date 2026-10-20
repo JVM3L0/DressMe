@@ -59,8 +59,8 @@ Como validar depois do deploy: faça 6 cadastros seguidos de uma mesma máquina.
 As fotos e as peças ficam em arquivos no volume `media` ([ADR-0003](adr/0003-armazenamento-local-de-imagens-com-nginx.md) e [ADR-0007](adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)). A API grava nele, e o nginx o monta em **somente leitura** em `/media`.
 
 - **Persistência:** use um volume que sobreviva a redeploys. Sem ele, os registros no banco apontam para arquivos que sumiram.
-- **Backup:** faça junto com o do banco. Os dois precisam ser do mesmo momento: o banco guarda só a chave (`photos/<uuid>.jpg`) de cada arquivo.
-- **Espaço:** só cresce com o uso (até 10 MB por imagem), e a exclusão de conta ainda não apaga os arquivos ([DT-11](debito-tecnico.md#dt-11-arquivos-órfãos-ao-apagar-contas)). Monitore o disco.
+- **Backup:** faça junto com o do banco. Os dois precisam ser do mesmo momento: o banco guarda só a chave (`photos/<uuid>.jpg`) de cada imagem, e a miniatura fica ao lado dela (`photos/<uuid>_thumb.jpg`).
+- **Espaço:** só cresce com o uso (cada envio ocupa de algumas centenas de KB a poucos MB: o original reduzido e a miniatura), e a exclusão de conta ainda não apaga os arquivos ([DT-11](debito-tecnico.md#dt-11-arquivos-órfãos-ao-apagar-contas)). Monitore o disco.
 - **Permissões:** a API grava os arquivos com modo `0644`, para o nginx (outro usuário) conseguir lê-los.
 - **Várias instâncias da API:** não funciona sem um disco compartilhado (limitação aceita da PoC).
 - **Limite de envio:** o nginx recusa corpos acima de 11 MB (`client_max_body_size` em `frontend/nginx/default.conf`). Se houver outro proxy na frente, ele precisa aceitar pelo menos isso.

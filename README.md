@@ -226,9 +226,9 @@ O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pr
 | POST   | `/auth/logout`  | Encerra a sessão neste navegador (`204`) |
 | GET    | `/users/me`     | Usuário da sessão atual (`401` sem sessão) |
 | GET, POST | `/photos/` | Lista as fotos do usuário (mais recentes primeiro) e envia uma nova (`multipart/form-data`, campo `file`; `201`, `413` acima de 10 MB, `415` se não for JPEG ou PNG) |
-| GET, DELETE | `/photos/{id}/image`, `/photos/{id}` | Arquivo da foto e exclusão (`404` se não existir ou for de outro usuário) |
+| GET, DELETE | `/photos/{id}/image`, `/photos/{id}/thumbnail`, `/photos/{id}` | Imagem (até 2.048 px), miniatura (até 480 px) e exclusão (`404` se não existir ou for de outro usuário) |
 | GET, POST | `/garments/` | Lista as peças (`?category=` filtra) e adiciona uma (`file`, `category` e `name` opcional) |
-| GET, DELETE | `/garments/{id}/image`, `/garments/{id}` | Arquivo da peça e exclusão |
+| GET, DELETE | `/garments/{id}/image`, `/garments/{id}/thumbnail`, `/garments/{id}` | Imagem, miniatura e exclusão |
 
 Categorias das peças: `top`, `outerwear`, `bottom`, `one_piece`, `footwear` e `accessory` ([ADR-0007](docs/adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)). Todas as rotas de fotos e peças exigem sessão.
 

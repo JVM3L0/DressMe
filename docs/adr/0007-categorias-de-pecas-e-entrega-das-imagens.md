@@ -31,11 +31,14 @@ O guarda-roupa da PoC ([ADR-0001](0001-escopo-prova-de-conceito.md)) pede "categ
    - `Cache-Control: private, max-age=31536000, immutable`: a imagem de um id nunca muda (uma nova foto ganha outro id), e `private` impede que um cache compartilhado a guarde.
 3. **Exclusão:** primeiro o registro, depois o arquivo. Se o arquivo não puder ser apagado, sobra um arquivo órfão e inofensivo, em vez de um registro apontando para o nada. Se o registro falhar depois de o arquivo ser gravado no upload, o arquivo é removido.
 4. **Limites:** 10 MB por imagem (a API confere e o nginx recusa corpos acima de 11 MB, que incluem os campos do formulário), no máximo 60 megapixels (proteção contra "bombas de descompressão"), e 30 envios por minuto por IP (`RATE_LIMIT_UPLOAD`).
-5. **A imagem é gravada como foi decodificada, sem redimensionar.** A orientação do EXIF é aplicada antes de descartar os metadados, para fotos de celular não ficarem deitadas.
+5. **Cada envio gera dois arquivos, o original reduzido e uma miniatura**, ambos regravados sem metadados e no mesmo formato (JPEG ou PNG, que mantém a transparência das peças recortadas).
+   - O lado maior do original é limitado a 2.048 px (uma foto de celular tem 4.000 px ou mais, e a tela não mostra tanto), e o da miniatura a 480 px. Imagens menores não são ampliadas.
+   - A miniatura tem a chave derivada da imagem (`photos/<uuid>_thumb.jpg`), sem outra coluna no banco, e é entregue por `GET .../{id}/thumbnail`. As grades usam a miniatura, e o provador, a imagem inteira.
+   - A orientação do EXIF é aplicada antes de descartar os metadados, para fotos de celular não ficarem deitadas.
 
 ## Consequências
 
-- A grade carrega as imagens em tamanho original: sem miniaturas, fotos de 5 a 10 MB tornam a lista pesada em redes lentas. Registrado como DT-12.
-- Apagar um usuário apaga os registros (`ON DELETE CASCADE`), mas não os arquivos. A exclusão de conta (RF13) está adiada, e o risco aparece no DT-11.
+- A grade carrega só miniaturas (cerca de 480 px), então a lista não fica pesada em redes lentas. O envio ainda leva o arquivo original (até 10 MB) pela rede: reduzir a foto no navegador, antes de enviar, ficou para depois.
+- Apagar um usuário apaga os registros (`ON DELETE CASCADE`), mas não os arquivos (o original e a miniatura). A exclusão de conta (RF13) está adiada, e o risco aparece no DT-11.
 - O volume `media` só cresce com o uso. Backup e espaço em disco ficam por conta de quem opera ([docs/deploy.md](../deploy.md)).
 - O provador manual (próxima versão) lê as peças e as fotos por estas mesmas rotas, e usa a categoria para posicionar cada peça.

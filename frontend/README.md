@@ -9,6 +9,7 @@ npm run check        # tipos (svelte-check)
 npm run lint         # Prettier + ESLint
 npm test             # Vitest: unidade (Node) e componentes (Chromium)
 npm run build        # gera build/ (HTML pré-renderizado + fallback 200.html)
+npm run e2e          # fluxo principal num navegador real, contra o ambiente completo (veja abaixo)
 npm run api:sync     # regenera src/lib/api/openapi.json e schema.ts a partir do backend
 ```
 
@@ -63,3 +64,14 @@ Sem as bibliotecas do sistema, dá para rodar os testes dentro da imagem oficial
 docker run --rm --ipc=host --user "$(id -u):$(id -g)" -e HOME=/tmp \
   -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.64.1-noble npx vitest run
 ```
+
+## Teste de ponta a ponta
+
+`npm run e2e` roda o fluxo principal (cadastro, login, envio de foto e de peça, exclusão e saída) num Chromium, contra o ambiente completo (nginx, API e banco). Pega o que os testes de componente, com a API simulada, não veem: a CSP, os cookies, o nginx e as imagens servidas de verdade. Falha com qualquer erro de console.
+
+```bash
+docker compose up -d --build --wait      # na raiz (WEB_PORT=8081 se a 8080 estiver ocupada)
+BASE_URL=http://localhost:8080 npm run e2e
+```
+
+Cada execução cria um usuário novo (a API ainda não exclui contas) e apaga as fotos e peças que enviou. No CI, o workflow `.github/workflows/e2e.yml` faz tudo isso. Se falhar, a captura de tela fica em `e2e/artifacts/failure.png`.
