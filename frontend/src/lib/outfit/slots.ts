@@ -64,13 +64,13 @@ export function orderedPieces(selection: Selection): Piece[] {
 }
 
 /**
- * Encaixes que aparecem na tela: com uma peça única escolhida, a parte de cima
- * e a de baixo somem (a peça única ocupa o lugar das duas), e sem ela o
- * encaixe da peça única fica como uma opção ao lado.
+ * Encaixes desenhados no mapa do corpo: cabeça, tronco, pernas e pés. A peça
+ * única só ganha um encaixe quando escolhida (antes disso, é uma opção à
+ * parte), e então ocupa o lugar da parte de cima e da de baixo, que somem.
  */
 export function visibleSlots(selection: Selection): GarmentCategory[] {
 	if (selection.one_piece) return SLOT_ORDER.filter((c) => !COVERED_BY_ONE_PIECE.includes(c));
-	return [...SLOT_ORDER];
+	return SLOT_ORDER.filter((category) => category !== 'one_piece');
 }
 
 /** Monta a seleção a partir dos ids de um conjunto salvo; ignora peças que já não existem */

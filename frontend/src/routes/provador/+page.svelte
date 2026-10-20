@@ -240,16 +240,26 @@
 					{/if}
 				</div>
 
-				<div class="slots">
-					{#each slots as category (category)}
-						<OutfitSlot
-							{category}
-							piece={selection[category]}
-							wide={category === 'one_piece'}
-							onpick={() => (picking = category)}
-							onclear={() => handleClear(category)}
-						/>
-					{/each}
+				<div class="body">
+					<!-- Mapa do corpo: cabeça, tronco (agasalho e parte de cima), pernas e pés -->
+					<div class="map" role="group" aria-label="Peças do conjunto, na posição do corpo">
+						{#each slots as category (category)}
+							<div class={['cell', category, selection.one_piece && 'covered']}>
+								<OutfitSlot
+									{category}
+									piece={selection[category]}
+									wide={category === 'one_piece'}
+									onpick={() => (picking = category)}
+									onclear={() => handleClear(category)}
+								/>
+							</div>
+						{/each}
+					</div>
+					{#if !selection.one_piece}
+						<button type="button" class="one-piece" onclick={() => (picking = 'one_piece')}>
+							Escolher peça única (vestido, macacão)
+						</button>
+					{/if}
 				</div>
 			</section>
 
@@ -403,15 +413,63 @@
 		color: var(--color-text-muted);
 	}
 
-	/* Quadradinhos: duas colunas, no celular e no computador */
-	.slots {
+	.body {
+		display: grid;
+		gap: var(--space-3);
+		justify-items: center;
+		width: min(100%, 15rem);
+		justify-self: center;
+	}
+
+	/* Mapa do corpo: os quadradinhos ficam onde a peça é vestida. Cabeça, pernas e
+	   pés são um quadrado no meio; o tronco tem dois (agasalho e parte de cima) */
+	.map {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: var(--space-3);
+		width: 100%;
 	}
 
-	.slots > :global(.wide) {
+	.cell {
+		min-width: 0;
+	}
+
+	.cell.accessory,
+	.cell.bottom,
+	.cell.footwear,
+	.cell.one_piece {
 		grid-column: 1 / -1;
+	}
+
+	.cell.accessory,
+	.cell.bottom,
+	.cell.footwear {
+		width: calc(50% - var(--space-3) / 2);
+		justify-self: center;
+	}
+
+	/* Com a peça única, o agasalho fica sozinho no tronco, centralizado */
+	.cell.outerwear.covered {
+		grid-column: 1 / -1;
+		width: calc(50% - var(--space-3) / 2);
+		justify-self: center;
+	}
+
+	.one-piece {
+		min-height: 2.75rem;
+		padding: var(--space-2) var(--space-4);
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius-field);
+		background: transparent;
+		color: var(--color-text-muted);
+		font: inherit;
+		font-size: var(--text-sm);
+		cursor: pointer;
+	}
+
+	.one-piece:hover {
+		border-color: var(--color-primary);
+		color: var(--color-text);
 	}
 
 	.save {
@@ -469,9 +527,21 @@
 
 	@media (min-width: 48rem) {
 		.stage {
-			grid-template-columns: minmax(0, 22rem) minmax(0, 24rem);
+			grid-template-columns: minmax(0, 22rem) minmax(0, 15rem);
 			justify-content: start;
 			gap: var(--space-8);
+			/* A foto tem a altura do mapa do corpo: cabeça, tronco, pernas e pés
+			   ficam na altura dos quadradinhos correspondentes */
+			align-items: stretch;
+		}
+
+		.photo {
+			grid-template-rows: minmax(0, 1fr) auto;
+		}
+
+		.main-photo {
+			height: 100%;
+			max-height: none;
 		}
 	}
 </style>

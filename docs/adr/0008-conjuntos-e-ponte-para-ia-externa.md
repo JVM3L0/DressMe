@@ -15,7 +15,10 @@ O ADR-0001 previa que o usuário posicionasse as peças sobre a própria foto no
    - As peças precisam ser do usuário. Uma peça de outro usuário responde como uma que não existe (`outfit_unknown_garment`, 422).
    - Excluir um conjunto não exclui as peças. Excluir uma peça a tira de todos os conjuntos (`ON DELETE CASCADE` no vínculo), e um conjunto pode ficar vazio.
    - A **foto não faz parte do conjunto**: o usuário a escolhe na hora de usar. Assim, o mesmo conjunto serve para qualquer foto.
-2. **O provador é uma grade de encaixes**, um por categoria, ao lado da foto (a "proposta A" do desenho: a foto de um lado e os quadradinhos, em duas colunas, na ordem do corpo: acessório, agasalho, parte de cima, parte de baixo, peça única e calçado). Com uma peça única escolhida, a parte de cima e a de baixo somem, e a peça única ocupa o lugar das duas. Sem arrastar, girar ou redimensionar.
+2. **O provador é um mapa do corpo**: cada categoria tem um quadradinho **na posição em que a peça é vestida**, ao lado da foto (no celular, abaixo dela).
+   - Acessório na cabeça (em cima, no meio), agasalho e parte de cima lado a lado no tronco, parte de baixo nas pernas e calçado nos pés, em colunas de dois quadrados. No computador, a foto tem a altura do mapa, então as zonas do corpo ficam na altura dos quadradinhos.
+   - A **peça única** (vestido, macacão) é uma opção abaixo do mapa. Quando escolhida, ocupa o lugar do tronco e das pernas, e a parte de cima e a de baixo somem.
+   - Sem arrastar, girar ou redimensionar.
 3. **A imagem das roupas é montada no navegador** (canvas): as peças, em tamanho inteiro, numa grade de células quadradas de 512 px, na ordem do corpo, sobre fundo branco liso, sem texto. A grade é de 1×1, 2×1, 2×2 ou 3×2, conforme o número de peças. Nada é enviado ao servidor.
 4. **O texto para a IA é gerado por regras, no frontend**, em uma função pura (`src/lib/outfit/prompt.ts`), em **inglês** (as IAs de imagem costumam entendê-lo melhor):
    - diz que a imagem 1 é a foto da pessoa e que a imagem 2 é a grade de roupas, e lista as peças na mesma ordem da grade, com a categoria e o nome que o usuário deu à peça;

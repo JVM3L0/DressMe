@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-	SLOT_ORDER,
 	choose,
 	clear,
 	idsOf,
@@ -116,11 +115,17 @@ describe('orderedPieces', () => {
 });
 
 describe('visibleSlots', () => {
-	it('mostra todos os encaixes quando não há peça única', () => {
-		expect(visibleSlots({ top: TOP })).toEqual([...SLOT_ORDER]);
+	it('desenha o corpo de cima para baixo, sem o encaixe da peça única', () => {
+		expect(visibleSlots({ top: TOP })).toEqual([
+			'accessory',
+			'outerwear',
+			'top',
+			'bottom',
+			'footwear'
+		]);
 	});
 
-	it('esconde a parte de cima e a de baixo com uma peça única', () => {
+	it('com uma peça única, ela fica no lugar da parte de cima e da de baixo', () => {
 		expect(visibleSlots({ one_piece: DRESS })).toEqual([
 			'accessory',
 			'outerwear',
