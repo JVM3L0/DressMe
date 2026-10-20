@@ -16,12 +16,12 @@ async def _validated_garment_ids(
 ) -> list[UUID]:
     """Confere que as peças são do usuário e que a composição vale"""
     unique_ids = list(dict.fromkeys(garment_ids))
+    if len(unique_ids) != len(garment_ids):
+        raise InvalidOutfitError(OutfitProblem.DUPLICATE_GARMENT)
     found = await garments.list_by_ids(unique_ids, owner_id)
     if len(found) != len(unique_ids):
         raise InvalidOutfitError(OutfitProblem.UNKNOWN_GARMENT)
-    # A checagem é sobre o que foi enviado: ids repetidos contam como repetição
-    by_id = {garment.uid: garment for garment in found}
-    check_composition(by_id[uid].category for uid in garment_ids)
+    check_composition(garment.category for garment in found)
     return unique_ids
 
 

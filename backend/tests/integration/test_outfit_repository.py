@@ -107,6 +107,18 @@ async def test_update_replaces_name_and_links(outfits, garments, alice, session)
     assert await link_count(session) == 1
 
 
+async def test_an_outfit_keeps_four_accessories_and_the_rest(outfits, garments, alice):
+    hats = [await add_garment(garments, alice, C.ACCESSORY) for _ in range(4)]
+    top = await add_garment(garments, alice, C.TOP)
+    ids = [top.uid, *[hat.uid for hat in hats]]
+
+    saved = await outfits.save(Outfit(owner_id=alice.uid, name="Look", garment_ids=ids))
+
+    again = await outfits.get_for_owner(saved.uid, alice.uid)
+    assert again is not None
+    assert sorted(again.garment_ids) == sorted(ids)
+
+
 async def test_deleting_an_outfit_keeps_its_garments(outfits, garments, alice, session):
     top = await add_garment(garments, alice)
     outfit = await outfits.save(

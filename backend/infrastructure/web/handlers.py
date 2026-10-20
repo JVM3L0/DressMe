@@ -56,6 +56,8 @@ _OUTFIT_MESSAGES = {
     OutfitProblem.ONE_PIECE_CONFLICT: (
         "Uma peça única não combina com parte de cima ou de baixo."
     ),
+    OutfitProblem.DUPLICATE_GARMENT: "Não repita a mesma peça.",
+    OutfitProblem.TOO_MANY_ACCESSORIES: "Use no máximo 4 acessórios.",
     OutfitProblem.UNKNOWN_GARMENT: "Alguma das peças não existe mais.",
 }
 

@@ -78,14 +78,33 @@ class TestCreate:
         assert exc.value.problem is OutfitProblem.DUPLICATE_CATEGORY
 
     async def test_rejects_the_same_garment_twice(self, outfits, garments):
-        top = await add(garments, OWNER, C.TOP)
+        hat = await add(garments, OWNER, C.ACCESSORY)
 
         with pytest.raises(InvalidOutfitError) as exc:
             await CreateOutfitUseCase(outfits, garments).execute(
-                OWNER, "Look", [top.uid, top.uid]
+                OWNER, "Look", [hat.uid, hat.uid]
             )
 
-        assert exc.value.problem is OutfitProblem.DUPLICATE_CATEGORY
+        assert exc.value.problem is OutfitProblem.DUPLICATE_GARMENT
+
+    async def test_accepts_up_to_four_different_accessories(self, outfits, garments):
+        hats = [await add(garments, OWNER, C.ACCESSORY) for _ in range(4)]
+
+        outfit = await CreateOutfitUseCase(outfits, garments).execute(
+            OWNER, "Look", [hat.uid for hat in hats]
+        )
+
+        assert outfit.garment_ids == [hat.uid for hat in hats]
+
+    async def test_rejects_a_fifth_accessory(self, outfits, garments):
+        hats = [await add(garments, OWNER, C.ACCESSORY) for _ in range(5)]
+
+        with pytest.raises(InvalidOutfitError) as exc:
+            await CreateOutfitUseCase(outfits, garments).execute(
+                OWNER, "Look", [hat.uid for hat in hats]
+            )
+
+        assert exc.value.problem is OutfitProblem.TOO_MANY_ACCESSORIES
 
     async def test_rejects_one_piece_with_top(self, outfits, garments):
         dress = await add(garments, OWNER, C.ONE_PIECE)

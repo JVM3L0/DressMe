@@ -118,6 +118,26 @@ async def test_create_rejects_invalid_compositions(
     assert outfits.items == []
 
 
+async def test_create_accepts_four_accessories_and_rejects_a_fifth(
+    client, garments, outfits
+):
+    hats = [await piece(garments, C.ACCESSORY) for _ in range(5)]
+
+    async def create(ids):
+        return await client.post("/outfits/", json={"name": "Look", "garment_ids": ids})
+
+    ok = await create(hats[:4])
+    too_many = await create(hats)
+
+    assert ok.status_code == status.HTTP_201_CREATED
+    assert too_many.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert too_many.json() == {
+        "detail": "Use no máximo 4 acessórios.",
+        "code": "outfit_too_many_accessories",
+    }
+    assert len(outfits.items) == 1
+
+
 async def test_create_with_garment_of_another_user_says_it_does_not_exist(
     client, garments
 ):
@@ -141,7 +161,7 @@ async def test_create_with_garment_of_another_user_says_it_does_not_exist(
         {"name": "x" * 61, "garment_ids": [str(uuid.uuid4())]},
         {"name": "Look", "garment_ids": ["nao-e-uuid"]},
         {"name": "Look", "garment_ids": [str(uuid.uuid4())] * 2},
-        {"name": "Look", "garment_ids": [str(uuid.uuid4()) for _ in range(7)]},
+        {"name": "Look", "garment_ids": [str(uuid.uuid4()) for _ in range(9)]},
     ],
 )
 async def test_create_returns_422_for_invalid_payload(client, outfits, payload):

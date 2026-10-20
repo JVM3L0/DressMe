@@ -38,8 +38,8 @@ class OutfitInput(BaseModel):
         Field(
             min_length=1,
             max_length=MAX_OUTFIT_GARMENTS,
-            description="Peças do conjunto: no máximo uma por categoria, e uma "
-            "peça única não combina com parte de cima ou de baixo.",
+            description="Peças do conjunto: no máximo uma por categoria (até 4 "
+            "acessórios), e uma peça única não combina com parte de cima ou de baixo.",
         ),
     ]
 
