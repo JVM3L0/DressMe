@@ -3,7 +3,9 @@ export function gridFor(count: number): { columns: number; rows: number } {
 	if (count <= 1) return { columns: 1, rows: 1 };
 	if (count === 2) return { columns: 2, rows: 1 };
 	if (count <= 4) return { columns: 2, rows: 2 };
-	return { columns: 3, rows: 2 };
+	if (count <= 6) return { columns: 3, rows: 2 };
+	// Até 8 peças: 4 acessórios, agasalho, parte de cima, parte de baixo e calçado
+	return { columns: 3, rows: 3 };
 }
 
 export interface Rect {

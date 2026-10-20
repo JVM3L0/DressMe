@@ -1,5 +1,5 @@
 /**
- * Encaixes do conjunto (ADR-0008): uma peça por categoria, e a peça única
+ * Encaixes do conjunto (ADR-0008): uma peça por categoria (até 4 acessórios), e a peça única
  * (vestido, macacão) ocupa o lugar da parte de cima e da parte de baixo. As
  * mesmas regras valem no backend (`domain/outfit_rules.py`), que é quem manda;
  * aqui elas evitam montar um conjunto que seria recusado.
@@ -14,7 +14,10 @@ export interface Piece {
 	name?: string | null;
 }
 
-export type Selection = Partial<Record<GarmentCategory, Piece>>;
+/** Peças escolhidas em cada categoria: uma, ou até `MAX_ACCESSORIES` nos acessórios. Nunca guarda lista vazia. */
+export type Selection = Partial<Record<GarmentCategory, Piece[]>>;
+
+export const MAX_ACCESSORIES = 4;
 
 /**
  * Ordem dos encaixes na tela, do alto do corpo para baixo. É também a ordem
@@ -39,16 +42,48 @@ function conflictsWith(category: GarmentCategory): readonly GarmentCategory[] {
 	return [];
 }
 
+export const piecesIn = (selection: Selection, category: GarmentCategory): Piece[] =>
+	selection[category] ?? [];
+
+/** A peça de uma categoria de peça só (todas, menos os acessórios) */
+export const firstIn = (selection: Selection, category: GarmentCategory): Piece | undefined =>
+	selection[category]?.[0];
+
 /** Peças que sairiam do conjunto se uma peça desta categoria fosse escolhida (para avisar antes) */
 export function replacedBy(selection: Selection, category: GarmentCategory): Piece[] {
-	return conflictsWith(category).flatMap((conflicting) => selection[conflicting] ?? []);
+	return conflictsWith(category).flatMap((conflicting) => piecesIn(selection, conflicting));
 }
 
-/** Escolhe a peça no seu encaixe, tirando as que não combinam com ela */
-export function choose(selection: Selection, piece: Piece): Selection {
+/** Acessórios: somam-se (sem repetir a mesma peça); `replacing` troca um específico */
+function withAccessory(current: Piece[], piece: Piece, replacing?: Piece): Piece[] {
+	const list = replacing
+		? current.map((item) => (item.uid === replacing.uid ? piece : item))
+		: [...current, piece];
+	const unique = list.filter((item, index) => list.findIndex((o) => o.uid === item.uid) === index);
+	return unique.slice(0, MAX_ACCESSORIES);
+}
+
+/**
+ * Escolhe a peça no seu encaixe, tirando as que não combinam com ela. Nos
+ * acessórios, a peça entra junto com as outras (até 4), ou no lugar de
+ * `replacing`; nas demais categorias, troca a que estava.
+ */
+export function choose(selection: Selection, piece: Piece, replacing?: Piece): Selection {
 	const next: Selection = { ...selection };
 	for (const category of conflictsWith(piece.category)) delete next[category];
-	next[piece.category] = piece;
+	next[piece.category] =
+		piece.category === 'accessory'
+			? withAccessory(piecesIn(selection, 'accessory'), piece, replacing)
+			: [piece];
+	return next;
+}
+
+/** Tira uma peça do conjunto (e a categoria, se ela ficar sem peças) */
+export function remove(selection: Selection, piece: Piece): Selection {
+	const next = { ...selection };
+	const rest = piecesIn(selection, piece.category).filter((item) => item.uid !== piece.uid);
+	if (rest.length > 0) next[piece.category] = rest;
+	else delete next[piece.category];
 	return next;
 }
 
@@ -58,9 +93,9 @@ export function clear(selection: Selection, category: GarmentCategory): Selectio
 	return next;
 }
 
-/** Peças escolhidas, na ordem do corpo */
+/** Peças escolhidas, na ordem do corpo (os acessórios, na ordem em que entraram) */
 export function orderedPieces(selection: Selection): Piece[] {
-	return SLOT_ORDER.flatMap((category) => selection[category] ?? []);
+	return SLOT_ORDER.flatMap((category) => piecesIn(selection, category));
 }
 
 /**

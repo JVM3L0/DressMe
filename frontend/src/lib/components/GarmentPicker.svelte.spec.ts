@@ -86,6 +86,42 @@ describe('GarmentPicker', () => {
 			.toBeVisible();
 	});
 
+	it('esconde as peças que não podem ser escolhidas de novo', async () => {
+		await render(GarmentPicker, props({ exclude: ['1'] }));
+
+		await expect.element(page.getByRole('button', { name: 'Camisa azul' })).not.toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Camisa verde' })).toBeVisible();
+	});
+
+	it('avisa quando todas as peças da categoria já estão no conjunto', async () => {
+		await render(GarmentPicker, props({ exclude: ['1', '2'] }));
+
+		await expect
+			.element(page.getByText('Todas as suas peças dessa categoria já estão no conjunto.'))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('link', { name: 'Adicionar peça' }))
+			.not.toBeInTheDocument();
+	});
+
+	it('oferece tirar a peça do conjunto, e fecha', async () => {
+		const onremove = vi.fn();
+		await render(GarmentPicker, props({ current: { uid: '1', category: 'top' }, onremove }));
+
+		await page.getByRole('button', { name: 'Tirar do conjunto' }).click();
+
+		expect(onremove).toHaveBeenCalledOnce();
+		await vi.waitFor(() => expect(document.querySelector('dialog')?.open).toBe(false));
+	});
+
+	it('sem uma peça para trocar, não oferece tirar', async () => {
+		await render(GarmentPicker, props());
+
+		await expect
+			.element(page.getByRole('button', { name: 'Tirar do conjunto' }))
+			.not.toBeInTheDocument();
+	});
+
 	it('sem peças na categoria, leva ao guarda-roupa', async () => {
 		await render(GarmentPicker, props({ category: 'accessory' }));
 

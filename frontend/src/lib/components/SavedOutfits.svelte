@@ -21,7 +21,7 @@
 	let confirmingUid: string | undefined = $state();
 
 	const piecesOf = (outfit: Outfit) =>
-		outfit.garment_ids.flatMap((uid) => byUid.get(uid) ?? []).slice(0, 6);
+		outfit.garment_ids.flatMap((uid) => byUid.get(uid) ?? []).slice(0, 8);
 </script>
 
 <section class="saved" aria-labelledby="conjuntos-salvos">

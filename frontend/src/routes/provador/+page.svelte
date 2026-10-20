@@ -3,6 +3,7 @@
 	import { tick } from 'svelte';
 
 	import FormAlert from '#lib/components/FormAlert.svelte';
+	import AccessoryRow from '#lib/components/AccessoryRow.svelte';
 	import GarmentPicker from '#lib/components/GarmentPicker.svelte';
 	import OutfitOutput from '#lib/components/OutfitOutput.svelte';
 	import OutfitSlot from '#lib/components/OutfitSlot.svelte';
@@ -22,12 +23,16 @@
 	import {
 		choose,
 		clear,
+		firstIn,
 		idsOf,
 		isEmpty,
 		orderedPieces,
+		piecesIn,
+		remove,
 		replacedBy,
 		selectionFromIds,
 		visibleSlots,
+		type Piece,
 		type Selection
 	} from '#lib/outfit/slots.ts';
 	import { listPhotos, photoImageUrl, photoThumbnailUrl, type Photo } from '#lib/photos/photos.ts';
@@ -43,7 +48,8 @@
 
 	let selection: Selection = $state({});
 	let photoUid: string | undefined = $state();
-	let picking: GarmentCategory | undefined = $state();
+	/** Escolha em andamento: a categoria e, nos acessórios, qual está sendo trocado */
+	let picking: { category: GarmentCategory; replacing?: Piece } | undefined = $state();
 
 	let active: Outfit | undefined = $state();
 	let outfitName = $state('');
@@ -92,8 +98,14 @@
 	}
 
 	function handlePick(garment: Garment) {
-		selection = choose(selection, garment);
+		selection = choose(selection, garment, picking?.replacing);
 		picking = undefined;
+		notice = '';
+	}
+
+	/** Tira o acessório que estava sendo trocado */
+	function handleRemovePicked() {
+		if (picking?.replacing) selection = remove(selection, picking.replacing);
 		notice = '';
 	}
 
@@ -245,20 +257,32 @@
 					<div class="map" role="group" aria-label="Peças do conjunto, na posição do corpo">
 						{#each slots as category (category)}
 							<div class={['cell', category]}>
-								<OutfitSlot
-									{category}
-									piece={selection[category]}
-									tall={category === 'one_piece'}
-									onpick={() => (picking = category)}
-									onclear={() => handleClear(category)}
-								/>
+								{#if category === 'accessory'}
+									<AccessoryRow
+										pieces={piecesIn(selection, 'accessory')}
+										onadd={() => (picking = { category: 'accessory' })}
+										onedit={(piece) => (picking = { category: 'accessory', replacing: piece })}
+									/>
+								{:else}
+									<OutfitSlot
+										{category}
+										piece={firstIn(selection, category)}
+										tall={category === 'one_piece'}
+										onpick={() => (picking = { category })}
+										onclear={() => handleClear(category)}
+									/>
+								{/if}
 							</div>
 						{/each}
 						<!-- Dá altura à linha das pernas quando a peça única (vertical) ocupa o lugar dela -->
 						{#if selection.one_piece}<div class="cell spacer" aria-hidden="true"></div>{/if}
 					</div>
 					{#if !selection.one_piece}
-						<button type="button" class="one-piece" onclick={() => (picking = 'one_piece')}>
+						<button
+							type="button"
+							class="one-piece"
+							onclick={() => (picking = { category: 'one_piece' })}
+						>
 							Escolher peça única (vestido, macacão)
 						</button>
 					{/if}
@@ -318,10 +342,16 @@
 	</div>
 
 	<GarmentPicker
-		category={picking}
+		category={picking?.category}
 		{garments}
-		current={picking ? selection[picking] : undefined}
-		replaced={picking ? replacedBy(selection, picking) : []}
+		current={picking?.replacing ?? (picking ? firstIn(selection, picking.category) : undefined)}
+		replaced={picking ? replacedBy(selection, picking.category) : []}
+		exclude={picking?.category === 'accessory'
+			? piecesIn(selection, 'accessory')
+					.filter((piece) => piece.uid !== picking?.replacing?.uid)
+					.map((piece) => piece.uid)
+			: []}
+		onremove={picking?.replacing ? handleRemovePicked : undefined}
 		onselect={handlePick}
 		onclose={() => (picking = undefined)}
 	/>
@@ -437,8 +467,9 @@
 		min-width: 0;
 	}
 
+	/* Acessórios: uma fileira de até 4 quadradinhos pequenos, no alto (a cabeça) */
 	.cell.accessory {
-		grid-area: 1 / 2 / 2 / 4;
+		grid-area: 1 / 1 / 2 / 5;
 	}
 
 	.cell.outerwear {

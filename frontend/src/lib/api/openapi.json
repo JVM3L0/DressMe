@@ -165,12 +165,12 @@
       "OutfitInput": {
         "properties": {
           "garment_ids": {
-            "description": "Peças do conjunto: no máximo uma por categoria, e uma peça única não combina com parte de cima ou de baixo.",
+            "description": "Peças do conjunto: no máximo uma por categoria (até 4 acessórios), e uma peça única não combina com parte de cima ou de baixo.",
             "items": {
               "format": "uuid",
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 8,
             "minItems": 1,
             "title": "Garment Ids",
             "type": "array"

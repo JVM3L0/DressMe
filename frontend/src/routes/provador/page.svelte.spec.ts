@@ -24,6 +24,7 @@ const SHIRT = garment('g-shirt', 'top', 'Camisa azul');
 const PANTS = garment('g-pants', 'bottom', 'Calça preta');
 const DRESS = garment('g-dress', 'one_piece', 'Vestido vermelho');
 const SHOES = garment('g-shoes', 'footwear', 'Tênis branco');
+const HATS = [1, 2, 3, 4, 5].map((n) => garment(`g-hat-${n}`, 'accessory', `Acessório ${n}`));
 const PHOTO = { uid: 'photo-1', width: 600, height: 800, created_at: '2026-10-19T12:00:00Z' };
 const OLD_PHOTO = { ...PHOTO, uid: 'photo-0' };
 
@@ -48,7 +49,7 @@ function open(
 	data: { outfits?: unknown[]; photos?: unknown[] } = {}
 ) {
 	return mockApi({
-		'GET /api/garments/': () => json(200, [SHIRT, PANTS, DRESS, SHOES]),
+		'GET /api/garments/': () => json(200, [SHIRT, PANTS, DRESS, SHOES, ...HATS]),
 		'GET /api/photos/': () => json(200, data.photos ?? [PHOTO]),
 		'GET /api/outfits/': () => json(200, data.outfits ?? []),
 		...routes
@@ -65,20 +66,18 @@ afterEach(() => {
 });
 
 describe('provador: carregamento', () => {
-	it('mostra os 6 encaixes vazios e a foto mais recente', async () => {
+	it('mostra o mapa do corpo vazio e a foto mais recente', async () => {
 		open();
 		await render(Page);
 
-		for (const label of [
-			'Acessório',
-			'Agasalho',
-			'Parte de cima',
-			'Parte de baixo',
-			'Peça única',
-			'Calçado'
-		]) {
+		for (const label of ['Agasalho', 'Parte de cima', 'Parte de baixo', 'Calçado']) {
 			await expect.element(slot(label)).toBeVisible();
 		}
+		await expect.element(page.getByRole('button', { name: 'Adicionar acessório' })).toBeVisible();
+		await expect.element(page.getByText('0 de 4')).toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Escolher peça única (vestido, macacão)' }))
+			.toBeVisible();
 		await expect
 			.element(page.getByAltText('Sua foto escolhida'))
 			.toHaveAttribute('src', '/api/photos/photo-1/image');
@@ -185,7 +184,7 @@ describe('provador: montagem', () => {
 		await pick('Parte de cima', 'Camisa azul');
 		await pick('Parte de baixo', 'Calça preta');
 
-		await slot('Peça única').click();
+		await page.getByRole('button', { name: 'Escolher peça única' }).click();
 		await expect
 			.element(page.getByText('Isso tira Camisa azul e Calça preta do conjunto.'))
 			.toBeVisible();
@@ -202,12 +201,13 @@ describe('provador: montagem', () => {
 	it('escolher uma parte de cima de novo tira a peça única', async () => {
 		open();
 		await render(Page);
-		await pick('Peça única', 'Vestido vermelho');
+		await page.getByRole('button', { name: 'Escolher peça única' }).click();
+		await page.getByRole('dialog').getByRole('button', { name: 'Vestido vermelho' }).click();
 
 		await page.getByRole('button', { name: 'Tirar Vestido vermelho do conjunto' }).click();
 		await pick('Parte de cima', 'Camisa azul');
 
-		await expect.element(slot('Peça única')).toBeVisible();
+		await expect.element(page.getByRole('button', { name: 'Escolher peça única' })).toBeVisible();
 	});
 
 	it('começar de novo esvazia o conjunto', async () => {
@@ -218,6 +218,119 @@ describe('provador: montagem', () => {
 		await page.getByRole('button', { name: 'Começar de novo' }).click();
 
 		await expect.element(slot('Parte de cima')).toBeVisible();
+	});
+});
+
+describe('provador: acessórios', () => {
+	const addAccessory = async (name: string) => {
+		await page.getByRole('button', { name: 'Adicionar acessório' }).click();
+		await page.getByRole('dialog').getByRole('button', { name }).click();
+	};
+
+	it('adiciona até 4 acessórios, e o botão de adicionar some no quarto', async () => {
+		open();
+		await render(Page);
+
+		for (const n of [1, 2, 3]) await addAccessory(`Acessório ${n}`);
+		await expect.element(page.getByText('3 de 4')).toBeVisible();
+		await expect.element(page.getByRole('button', { name: 'Adicionar acessório' })).toBeVisible();
+
+		await addAccessory('Acessório 4');
+
+		await expect.element(page.getByText('4 de 4')).toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Adicionar acessório' }))
+			.not.toBeInTheDocument();
+	});
+
+	it('não oferece de novo um acessório que já está no conjunto', async () => {
+		open();
+		await render(Page);
+		await addAccessory('Acessório 1');
+
+		await page.getByRole('button', { name: 'Adicionar acessório' }).click();
+
+		const dialog = page.getByRole('dialog');
+		await expect
+			.element(dialog.getByRole('button', { name: 'Acessório 1' }))
+			.not.toBeInTheDocument();
+		await expect.element(dialog.getByRole('button', { name: 'Acessório 2' })).toBeVisible();
+	});
+
+	it('troca um acessório e mantém os outros', async () => {
+		open();
+		await render(Page);
+		await addAccessory('Acessório 1');
+		await addAccessory('Acessório 2');
+
+		await page.getByRole('button', { name: 'Trocar acessório: Acessório 1' }).click();
+		await page.getByRole('dialog').getByRole('button', { name: 'Acessório 5' }).click();
+
+		await expect
+			.element(page.getByRole('button', { name: 'Trocar acessório: Acessório 5' }))
+			.toBeVisible();
+		await expect
+			.element(page.getByRole('button', { name: 'Trocar acessório: Acessório 2' }))
+			.toBeVisible();
+		await expect.element(page.getByText('2 de 4')).toBeVisible();
+	});
+
+	it('tira um acessório pelo seletor', async () => {
+		open();
+		await render(Page);
+		await addAccessory('Acessório 1');
+		await addAccessory('Acessório 2');
+
+		await page.getByRole('button', { name: 'Trocar acessório: Acessório 1' }).click();
+		await page.getByRole('button', { name: 'Tirar do conjunto' }).click();
+
+		await expect
+			.element(page.getByRole('button', { name: 'Trocar acessório: Acessório 1' }))
+			.not.toBeInTheDocument();
+		await expect.element(page.getByText('1 de 4')).toBeVisible();
+	});
+
+	it('todos os acessórios entram no texto, antes das outras peças', async () => {
+		open();
+		await render(Page);
+		await pick('Parte de cima', 'Camisa azul');
+		await addAccessory('Acessório 2');
+		await addAccessory('Acessório 1');
+
+		const text = (promptText().element() as HTMLTextAreaElement).value;
+		expect(text).toContain('1. Accessory: "Acessório 2"');
+		expect(text).toContain('2. Accessory: "Acessório 1"');
+		expect(text).toContain('3. Top: "Camisa azul"');
+	});
+
+	it('salva o conjunto com os acessórios, na ordem do corpo', async () => {
+		const api = open({
+			'POST /api/outfits/': () =>
+				json(201, outfit('o-new', 'Look', ['g-hat-1', 'g-hat-2', 'g-shirt']))
+		});
+		await render(Page);
+		await pick('Parte de cima', 'Camisa azul');
+		await addAccessory('Acessório 1');
+		await addAccessory('Acessório 2');
+		await page.getByLabelText('Nome do conjunto').fill('Look');
+
+		await page.getByRole('button', { name: 'Salvar conjunto' }).click();
+
+		await expect.element(page.getByText('Conjunto salvo.')).toBeVisible();
+		expect(await api.to('POST /api/outfits/')[0].json()).toEqual({
+			name: 'Look',
+			garment_ids: ['g-hat-1', 'g-hat-2', 'g-shirt']
+		});
+	});
+
+	it('usa um conjunto salvo com vários acessórios', async () => {
+		open({}, { outfits: [outfit('o-3', 'Com acessórios', ['g-hat-1', 'g-hat-3', 'g-shirt'])] });
+		await render(Page);
+
+		await page.getByRole('button', { name: 'Usar o conjunto Com acessórios' }).click();
+
+		await expect.element(page.getByText('3 peças', { exact: false }).first()).toBeVisible();
+		await expect.element(page.getByText('2 de 4')).toBeVisible();
 	});
 });
 

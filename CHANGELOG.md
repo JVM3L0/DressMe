@@ -7,11 +7,11 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
 ### Adicionado
 
 - Provador (`/provador`) e conjuntos de peças ([ADR-0008](docs/adr/0008-conjuntos-e-ponte-para-ia-externa.md)):
-  - a foto ao lado de um mapa do corpo, com um quadradinho para cada categoria na posição em que a peça é vestida (acessório na cabeça, agasalho e parte de cima no tronco, parte de baixo nas pernas, calçado nos pés); a peça única fica na vertical, ocupando a altura do tronco e das pernas, e o app avisa o que sairá do conjunto antes de trocar;
+  - a foto ao lado de um mapa do corpo, com um quadradinho para cada categoria na posição em que a peça é vestida (acessório na cabeça, agasalho e parte de cima no tronco, parte de baixo nas pernas, calçado nos pés); os acessórios (até 4) ficam numa fileira de quadradinhos pequenos no alto; a peça única fica na vertical, ocupando a altura do tronco e das pernas, e o app avisa o que sairá do conjunto antes de trocar;
   - conjuntos salvos com nome (API `POST`/`GET /outfits/`, `PUT` e `DELETE /outfits/{id}`): usar, atualizar, salvar como novo e excluir. Excluir um conjunto não exclui as peças, e excluir uma peça a tira dos conjuntos;
-  - o backend confere a composição: peças do usuário, uma por categoria, e peça única sem parte de cima ou de baixo.
+  - o backend confere a composição: peças do usuário e sem repetir, uma por categoria (até 4 acessórios), e peça única sem parte de cima ou de baixo.
 - Levar o conjunto para uma IA de imagens, sem o VirtualFit enviar nada a ninguém:
-  - a imagem das roupas é montada no navegador, numa grade de quadradinhos em ordem do corpo;
+  - a imagem das roupas é montada no navegador, numa grade de quadradinhos em ordem do corpo (até 8 peças);
   - copiar a foto e copiar a imagem das roupas (PNG) para a área de transferência, e baixar as duas imagens (em contexto seguro; em HTTP só o download);
   - texto em inglês gerado por regras a partir das peças (categoria e nome), com a opção de manter o fundo e um pedido extra, para copiar e colar na IA;
   - "Compartilhar tudo" (foto, roupas e texto) em aparelhos que suportam.

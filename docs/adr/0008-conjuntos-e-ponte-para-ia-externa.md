@@ -11,15 +11,15 @@ O ADR-0001 previa que o usuário posicionasse as peças sobre a própria foto no
 ## Decisão
 
 1. **Um conjunto é um nome e as peças do guarda-roupa**, salvo no banco: a tabela `outfits` (dono e nome) e a tabela de vínculo `outfit_garments` (`outfit_id`, `garment_id`).
-   - Regras, no domínio (`domain/outfit_rules.py`) e conferidas no backend: **uma peça por categoria**, e a **peça única** (vestido, macacão) não combina com parte de cima nem de baixo, porque ocupa o lugar das duas. O frontend aplica as mesmas regras para não montar o que seria recusado, mas quem manda é o backend.
+   - Regras, no domínio (`domain/outfit_rules.py`) e conferidas no backend: **uma peça por categoria, exceto os acessórios (até 4)**, sem repetir a mesma peça, e a **peça única** (vestido, macacão) não combina com parte de cima nem de baixo, porque ocupa o lugar das duas. O frontend aplica as mesmas regras para não montar o que seria recusado, mas quem manda é o backend.
    - As peças precisam ser do usuário. Uma peça de outro usuário responde como uma que não existe (`outfit_unknown_garment`, 422).
    - Excluir um conjunto não exclui as peças. Excluir uma peça a tira de todos os conjuntos (`ON DELETE CASCADE` no vínculo), e um conjunto pode ficar vazio.
    - A **foto não faz parte do conjunto**: o usuário a escolhe na hora de usar. Assim, o mesmo conjunto serve para qualquer foto.
 2. **O provador é um mapa do corpo**: cada categoria tem um quadradinho **na posição em que a peça é vestida**, ao lado da foto (no celular, abaixo dela).
-   - Acessório na cabeça (em cima, no meio), agasalho e parte de cima lado a lado no tronco, parte de baixo nas pernas e calçado nos pés, em colunas de dois quadrados. No computador, a foto tem a altura do mapa, então as zonas do corpo ficam na altura dos quadradinhos.
+   - Acessórios numa fileira de até 4 quadradinhos pequenos no alto (a cabeça), agasalho e parte de cima lado a lado no tronco, parte de baixo nas pernas e calçado nos pés. No computador, a foto tem a altura do mapa, então as zonas do corpo ficam na altura dos quadradinhos.
    - A **peça única** (vestido, macacão) é uma opção abaixo do mapa. Quando escolhida, vira um quadradinho **vertical** (a altura do tronco e das pernas juntos), ao lado do agasalho, e a parte de cima e a de baixo somem.
    - Sem arrastar, girar ou redimensionar.
-3. **A imagem das roupas é montada no navegador** (canvas): as peças, em tamanho inteiro, numa grade de células quadradas de 512 px, na ordem do corpo, sobre fundo branco liso, sem texto. A grade é de 1×1, 2×1, 2×2 ou 3×2, conforme o número de peças. Nada é enviado ao servidor.
+3. **A imagem das roupas é montada no navegador** (canvas): as peças, em tamanho inteiro, numa grade de células quadradas de 512 px, na ordem do corpo (os acessórios primeiro), sobre fundo branco liso, sem texto. A grade é de 1×1, 2×1, 2×2, 3×2 ou 3×3, conforme o número de peças (até 8). Nada é enviado ao servidor.
 4. **O texto para a IA é gerado por regras, no frontend**, em uma função pura (`src/lib/outfit/prompt.ts`), em **inglês** (as IAs de imagem costumam entendê-lo melhor):
    - diz que a imagem 1 é a foto da pessoa e que a imagem 2 é a grade de roupas, e lista as peças na mesma ordem da grade, com a categoria e o nome que o usuário deu à peça;
    - pede a mesma pessoa vestida exatamente com aquelas peças, mantendo rosto, cabelo, tom de pele, corpo e pose, sem acrescentar outras roupas;
@@ -37,4 +37,4 @@ O ADR-0001 previa que o usuário posicionasse as peças sobre a própria foto no
 - A qualidade do resultado depende da IA escolhida e do nome das peças, e o VirtualFit não consegue conferi-lo.
 - Pelo celular em HTTP na rede local (desenvolvimento), a cópia de imagem não funciona: usa-se o download. Em produção, com HTTPS, funciona.
 - Um conjunto pode ficar vazio se todas as suas peças forem excluídas. A lista mostra "Conjunto vazio", e o usuário pode excluí-lo.
-- O limite de uma peça por categoria vale também para acessórios: quem usa dois acessórios monta o conjunto com um deles.
+- Um conjunto tem no máximo 8 peças (4 acessórios, agasalho, parte de cima, parte de baixo e calçado). Mais acessórios que isso, ou mais de uma peça nas outras categorias, são recusados.

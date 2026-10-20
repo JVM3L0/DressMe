@@ -13,15 +13,34 @@
 		current?: Piece;
 		/** Peças que sairiam do conjunto se uma dessa categoria entrar */
 		replaced?: readonly Piece[];
+		/** Ids que não podem ser escolhidos de novo (acessórios que já estão no conjunto) */
+		exclude?: readonly string[];
+		/** Quando há uma peça sendo trocada, oferece tirá-la do conjunto */
+		onremove?: () => void;
 		onselect: (garment: Garment) => void;
 		onclose: () => void;
 	}
 
-	let { category, garments, current, replaced = [], onselect, onclose }: Props = $props();
+	let {
+		category,
+		garments,
+		current,
+		replaced = [],
+		exclude = [],
+		onremove,
+		onselect,
+		onclose
+	}: Props = $props();
 
 	let dialog: HTMLDialogElement | undefined = $state();
 
-	const options = $derived(garments.filter((garment) => garment.category === category));
+	const options = $derived(
+		garments.filter((garment) => garment.category === category && !exclude.includes(garment.uid))
+	);
+	const allUsed = $derived(
+		options.length === 0 &&
+			garments.some((garment) => garment.category === category && exclude.includes(garment.uid))
+	);
 	const label = $derived(category ? categoryLabel(category) : '');
 	const titleId = $props.id();
 
@@ -47,7 +66,9 @@
 			<p class="warning">Isso tira {names} do conjunto.</p>
 		{/if}
 
-		{#if options.length === 0}
+		{#if allUsed}
+			<p class="muted">Todas as suas peças dessa categoria já estão no conjunto.</p>
+		{:else if options.length === 0}
 			<p class="muted">Você ainda não tem peças nessa categoria.</p>
 			<a class="button" href={resolve('/guarda-roupa')}>Adicionar peça</a>
 		{:else}
@@ -68,7 +89,18 @@
 			</ul>
 		{/if}
 
-		<form method="dialog">
+		<form method="dialog" class="footer">
+			{#if onremove}
+				<button
+					class="close remove"
+					type="submit"
+					onclick={() => {
+						onremove?.();
+					}}
+				>
+					Tirar do conjunto
+				</button>
+			{/if}
 			<button class="close" type="submit">Cancelar</button>
 		</form>
 	</div>
@@ -158,6 +190,17 @@
 		white-space: nowrap;
 		font-size: var(--text-sm);
 		font-weight: 600;
+	}
+
+	.footer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
+	.remove {
+		border-color: var(--color-danger);
+		color: var(--color-danger);
 	}
 
 	.close {
