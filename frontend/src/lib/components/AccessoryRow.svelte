@@ -2,6 +2,8 @@
 	import { MAX_ACCESSORIES, type Piece } from '#lib/outfit/slots.ts';
 	import { garmentThumbnailUrl } from '#lib/wardrobe/garments.ts';
 
+	import Icon from './Icon.svelte';
+
 	interface Props {
 		pieces: readonly Piece[];
 		onadd: () => void;
@@ -38,11 +40,15 @@
 		{#if !full}
 			<li>
 				<button type="button" class="mini add" aria-label="Adicionar acessório" onclick={onadd}>
-					<span aria-hidden="true">+</span>
+					<Icon name="plus" size="sm" />
+					<span class="add-label" aria-hidden="true">Adicionar</span>
 				</button>
 			</li>
 		{/if}
 	</ul>
+	{#if pieces.length > 0}
+		<p class="hint">Toque num acessório para trocar ou tirar.</p>
+	{/if}
 </div>
 
 <style>
@@ -63,6 +69,13 @@
 		font-weight: 600;
 	}
 
+	.hint {
+		margin: 0;
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+		text-align: center;
+	}
+
 	.row {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -75,29 +88,51 @@
 	.mini {
 		display: grid;
 		place-items: center;
+		align-content: center;
 		width: 100%;
 		aspect-ratio: 1;
 		min-height: 2.75rem; /* alvo de toque de 44px */
 		padding: 0;
-		border: 2px dashed var(--color-border);
+		border: 2px dashed var(--color-primary);
 		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text-muted);
+		background: var(--color-surface);
+		color: var(--color-primary);
 		font: inherit;
-		font-size: var(--text-lg);
-		line-height: 1;
 		cursor: pointer;
 		overflow: hidden;
+		transition: transform var(--duration-quick, 150ms) ease-out;
 	}
 
 	.mini:hover {
-		border-color: var(--color-primary);
-		color: var(--color-text);
+		background: var(--color-bg);
+	}
+
+	.mini:active {
+		transform: scale(0.95);
+	}
+
+	.add-label {
+		font-size: 0.625rem;
+		font-weight: 600;
+		line-height: 1;
 	}
 
 	.mini.filled {
 		border: 1px solid var(--color-border-subtle);
-		background: var(--color-surface);
+	}
+
+	.mini.filled:hover {
+		border-color: var(--color-primary);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.mini {
+			transition: none;
+		}
+
+		.mini:active {
+			transform: none;
+		}
 	}
 
 	img {

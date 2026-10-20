@@ -26,6 +26,29 @@ describe('OutfitSlot', () => {
 		await expect.element(page.getByRole('button', { name: /Tirar/ })).not.toBeInTheDocument();
 	});
 
+	it('vazio, parece clicável: ícone da categoria, "+" e "Toque para escolher"', async () => {
+		await render(OutfitSlot, props());
+
+		await expect.element(page.getByText('Toque para escolher')).toBeVisible();
+		await expect.element(page.getByText('Parte de cima')).toBeVisible();
+		const face = document.querySelector('.face') as HTMLElement;
+		expect(getComputedStyle(face).cursor).toBe('pointer');
+		// Um ícone grande da categoria e o "+" do canto (ambos decorativos)
+		expect(face.querySelectorAll('svg')).toHaveLength(2);
+		expect(
+			[...face.querySelectorAll('svg')].every((svg) => svg.getAttribute('aria-hidden') === 'true')
+		).toBe(true);
+	});
+
+	it('preenchido, mostra o ícone de trocar ao lado do nome', async () => {
+		await render(OutfitSlot, props({ piece: PIECE }));
+
+		const swap = document.querySelector('.swap') as HTMLElement;
+		expect(swap.getAttribute('aria-hidden')).toBe('true');
+		expect(swap.querySelector('svg')).not.toBeNull();
+		expect(document.querySelector('.cta')).toBeNull();
+	});
+
 	it('preenchido, mostra a miniatura, a categoria e o nome', async () => {
 		await render(OutfitSlot, props({ piece: PIECE }));
 

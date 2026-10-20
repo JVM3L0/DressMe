@@ -138,6 +138,45 @@ describe('provador: carregamento', () => {
 	});
 });
 
+describe('provador: posição do painel de exportação', () => {
+	const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+
+	it('no celular, o painel vem logo abaixo da montagem, antes de salvar', async () => {
+		await page.viewport(390, 844);
+		open();
+		await render(Page);
+		await expect
+			.element(page.getByRole('complementary', { name: 'Exportar o conjunto' }))
+			.toBeVisible();
+
+		expect(box('.export-panel').top).toBeGreaterThanOrEqual(box('.stage').bottom);
+		expect(box('.export-panel').bottom).toBeLessThanOrEqual(box('.save-area').top + 1);
+	});
+
+	it('no computador, o painel fica ao lado da montagem e acompanha a rolagem', async () => {
+		await page.viewport(1280, 900);
+		open();
+		await render(Page);
+		await expect
+			.element(page.getByRole('complementary', { name: 'Exportar o conjunto' }))
+			.toBeVisible();
+
+		const panel = box('.export-panel');
+		expect(panel.left).toBeGreaterThanOrEqual(box('.stage').right);
+		expect(Math.round(panel.top)).toBe(Math.round(box('.stage').top));
+		expect(getComputedStyle(document.querySelector('.export-panel')!).position).toBe('sticky');
+	});
+
+	it('o painel mostra os três passos: foto, roupas e texto', async () => {
+		open();
+		await render(Page);
+
+		await expect.element(page.getByRole('heading', { name: '1. Sua foto' })).toBeVisible();
+		await expect.element(page.getByRole('heading', { name: '2. As roupas' })).toBeVisible();
+		await expect.element(page.getByRole('heading', { name: '3. O texto' })).toBeVisible();
+	});
+});
+
 describe('provador: montagem', () => {
 	it('escolhe uma peça num encaixe e atualiza o texto', async () => {
 		open();

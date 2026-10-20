@@ -49,10 +49,10 @@
 							{/if}
 						</span>
 					</div>
-					<div class="actions">
+					<div class="button-group">
 						<button
 							type="button"
-							class="use"
+							class="button"
 							aria-label={`Usar o conjunto ${outfit.name}`}
 							onclick={() => onuse(outfit)}
 						>
@@ -61,7 +61,7 @@
 						{#if confirmingUid === outfit.uid}
 							<button
 								type="button"
-								class="danger"
+								class="button danger"
 								disabled={deletingUid === outfit.uid}
 								onclick={() => {
 									confirmingUid = undefined;
@@ -70,10 +70,17 @@
 							>
 								Excluir mesmo
 							</button>
-							<button type="button" onclick={() => (confirmingUid = undefined)}>Cancelar</button>
+							<button
+								type="button"
+								class="button secondary"
+								onclick={() => (confirmingUid = undefined)}
+							>
+								Cancelar
+							</button>
 						{:else}
 							<button
 								type="button"
+								class="button secondary"
 								aria-label={`Excluir o conjunto ${outfit.name}`}
 								disabled={deletingUid === outfit.uid}
 								onclick={() => (confirmingUid = outfit.uid)}
@@ -111,9 +118,10 @@
 		list-style: none;
 	}
 
+	/* Celular: miniaturas, nome e botões empilhados (8 miniaturas não cabem ao lado do nome) */
 	.item {
 		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--space-2) var(--space-4);
 		align-items: center;
 		padding: var(--space-3);
@@ -129,6 +137,7 @@
 
 	.thumbs {
 		display: flex;
+		flex-wrap: wrap;
 		gap: var(--space-1);
 	}
 
@@ -157,40 +166,13 @@
 		color: var(--color-text-muted);
 	}
 
-	.actions {
-		grid-column: 1 / -1;
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
+	@media (min-width: 48rem) {
+		.item {
+			grid-template-columns: auto minmax(0, 1fr);
+		}
 
-	button {
-		min-height: 2.75rem; /* alvo de toque de 44px */
-		padding: var(--space-1) var(--space-4);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text);
-		font: inherit;
-		font-size: var(--text-sm);
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	button:disabled {
-		cursor: progress;
-		opacity: 0.6;
-	}
-
-	.use {
-		border-color: var(--color-primary);
-		background: var(--color-primary);
-		color: var(--color-on-primary);
-	}
-
-	.danger {
-		border-color: var(--color-danger);
-		background: var(--color-danger);
-		color: var(--color-bg);
+		.button-group {
+			grid-column: 1 / -1;
+		}
 	}
 </style>

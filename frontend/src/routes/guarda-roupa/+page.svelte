@@ -174,7 +174,7 @@
 		{#if loading === 'loading'}
 			<p role="status" class="muted">Carregando seu guarda-roupa…</p>
 		{:else if loading === 'error'}
-			<button class="retry" type="button" onclick={load}>Tentar de novo</button>
+			<button class="button secondary retry" type="button" onclick={load}>Tentar de novo</button>
 		{:else if garments.length === 0}
 			<p class="muted">Seu guarda-roupa está vazio. Adicione a primeira peça pelo formulário.</p>
 		{:else}
@@ -213,14 +213,5 @@
 
 	.retry {
 		justify-self: start;
-		min-height: 2.75rem;
-		padding: var(--space-2) var(--space-6);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
 	}
 </style>

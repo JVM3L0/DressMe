@@ -184,6 +184,41 @@ try {
 		assert.match(prompt, /1\. Top: "Camisa azul"/);
 		assert.match(prompt, /2\. Bottom: "Calça preta"/);
 
+		// Botões padronizados: em cada grupo, todos têm a mesma largura e altura (por linha),
+		// e nenhum é menor que o alvo de toque de 44px
+		const groups = await page.locator('.button-group').evaluateAll((items) =>
+			items.map((group) =>
+				[...group.querySelectorAll('.button')]
+					// Só os visíveis: a janela de escolha da peça, fechada, também tem botões
+					.filter((button) => button.getClientRects().length > 0)
+					.map((button) => {
+						const box = button.getBoundingClientRect();
+						return {
+							row: Math.round(box.y),
+							width: Math.round(box.width),
+							height: Math.round(box.height)
+						};
+					})
+			)
+		);
+		assert.ok(groups.length >= 3, 'o provador tem grupos de botões');
+		for (const buttons of groups) {
+			for (const button of buttons) assert.ok(button.height >= 44, 'alvo de toque de 44px');
+			const rows = Map.groupBy(buttons, (button) => button.row);
+			for (const row of rows.values()) {
+				assert.equal(
+					new Set(row.map((b) => b.width)).size,
+					1,
+					`larguras iguais: ${JSON.stringify(row)}`
+				);
+				assert.equal(
+					new Set(row.map((b) => b.height)).size,
+					1,
+					`alturas iguais: ${JSON.stringify(row)}`
+				);
+			}
+		}
+
 		const clipboardImage = () =>
 			page.evaluate(async () => {
 				const [item] = await navigator.clipboard.read();

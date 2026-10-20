@@ -5,6 +5,7 @@
 	import FormAlert from '#lib/components/FormAlert.svelte';
 	import AccessoryRow from '#lib/components/AccessoryRow.svelte';
 	import GarmentPicker from '#lib/components/GarmentPicker.svelte';
+	import Icon from '#lib/components/Icon.svelte';
 	import OutfitOutput from '#lib/components/OutfitOutput.svelte';
 	import OutfitSlot from '#lib/components/OutfitSlot.svelte';
 	import RequireSession from '#lib/components/RequireSession.svelte';
@@ -213,131 +214,153 @@
 			<p role="status" class="muted">Carregando seu provador…</p>
 		{:else if loading === 'error'}
 			<FormAlert message={loadError} />
-			<button class="retry" type="button" onclick={load}>Tentar de novo</button>
+			<button class="button secondary retry" type="button" onclick={load}>Tentar de novo</button>
 		{:else if garments.length === 0}
 			<p class="muted">
 				Seu guarda-roupa está vazio. Para montar um conjunto, primeiro adicione peças.
 			</p>
 			<a class="button go" href={resolve('/guarda-roupa')}>Ir para o guarda-roupa</a>
 		{:else}
-			<section class="stage" aria-label="Montagem do conjunto">
-				<div class="photo">
-					{#if photo}
-						<img
-							class="main-photo"
-							src={photoImageUrl(photo.uid)}
-							width={photo.width}
-							height={photo.height}
-							alt="Sua foto escolhida"
-						/>
-						{#if photos.length > 1}
-							<div class="strip" role="group" aria-label="Trocar foto">
-								{#each photos as item, index (item.uid)}
-									<button
-										type="button"
-										aria-pressed={item.uid === photoUid}
-										aria-label={`Foto ${index + 1} de ${photos.length}`}
-										onclick={() => (photoUid = item.uid)}
-									>
-										<img src={photoThumbnailUrl(item.uid)} alt="" loading="lazy" decoding="async" />
-									</button>
-								{/each}
+			<div class="workspace">
+				<section class="stage" aria-label="Montagem do conjunto">
+					<div class="photo">
+						{#if photo}
+							<img
+								class="main-photo"
+								src={photoImageUrl(photo.uid)}
+								width={photo.width}
+								height={photo.height}
+								alt="Sua foto escolhida"
+							/>
+							{#if photos.length > 1}
+								<p class="strip-hint">Toque numa miniatura para trocar a foto</p>
+								<div class="strip" role="group" aria-label="Trocar foto">
+									{#each photos as item, index (item.uid)}
+										<button
+											type="button"
+											aria-pressed={item.uid === photoUid}
+											aria-label={`Foto ${index + 1} de ${photos.length}`}
+											onclick={() => (photoUid = item.uid)}
+										>
+											<img
+												src={photoThumbnailUrl(item.uid)}
+												alt=""
+												loading="lazy"
+												decoding="async"
+											/>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						{:else}
+							<div class="no-photo">
+								<p>Você ainda não enviou nenhuma foto.</p>
+								<a href={resolve('/fotos')}>Enviar uma foto</a>
 							</div>
 						{/if}
-					{:else}
-						<div class="no-photo">
-							<p>Você ainda não enviou nenhuma foto.</p>
-							<a href={resolve('/fotos')}>Enviar uma foto</a>
-						</div>
-					{/if}
-				</div>
-
-				<div class="body">
-					<!-- Mapa do corpo: cabeça, tronco (agasalho e parte de cima), pernas e pés -->
-					<div class="map" role="group" aria-label="Peças do conjunto, na posição do corpo">
-						{#each slots as category (category)}
-							<div class={['cell', category]}>
-								{#if category === 'accessory'}
-									<AccessoryRow
-										pieces={piecesIn(selection, 'accessory')}
-										onadd={() => (picking = { category: 'accessory' })}
-										onedit={(piece) => (picking = { category: 'accessory', replacing: piece })}
-									/>
-								{:else}
-									<OutfitSlot
-										{category}
-										piece={firstIn(selection, category)}
-										tall={category === 'one_piece'}
-										onpick={() => (picking = { category })}
-										onclear={() => handleClear(category)}
-									/>
-								{/if}
-							</div>
-						{/each}
-						<!-- Dá altura à linha das pernas quando a peça única (vertical) ocupa o lugar dela -->
-						{#if selection.one_piece}<div class="cell spacer" aria-hidden="true"></div>{/if}
 					</div>
-					{#if !selection.one_piece}
-						<button
-							type="button"
-							class="one-piece"
-							onclick={() => (picking = { category: 'one_piece' })}
-						>
-							Escolher peça única (vestido, macacão)
-						</button>
-					{/if}
-				</div>
-			</section>
 
-			<FormAlert kind="success" message={notice} />
-
-			<section class="save" aria-labelledby="salvar-conjunto">
-				<h2 id="salvar-conjunto">
-					{active ? `Conjunto: ${active.name}` : 'Salvar este conjunto'}
-				</h2>
-				<form
-					novalidate
-					onsubmit={(event) => {
-						event.preventDefault();
-						save(active ? 'update' : 'create');
-					}}
-				>
-					<TextField
-						label="Nome do conjunto"
-						name="outfit-name"
-						maxlength={OUTFIT_NAME_MAX}
-						autocomplete="off"
-						hint="Por exemplo: “Look de sexta”."
-						error={nameError}
-						bind:value={outfitName}
-						bind:input={nameInput}
-						oninput={() => (nameError = '')}
-					/>
-					<FormAlert message={formError} />
-					<div class="actions">
-						<button class="primary" type="submit" disabled={saving} aria-busy={saving}>
-							{#if saving}Salvando…{:else if active}Atualizar conjunto{:else}Salvar conjunto{/if}
-						</button>
-						{#if active}
-							<button type="button" disabled={saving} onclick={() => save('create')}>
-								Salvar como novo
+					<div class="body">
+						<!-- Mapa do corpo: cabeça, tronco (agasalho e parte de cima), pernas e pés -->
+						<div class="map" role="group" aria-label="Peças do conjunto, na posição do corpo">
+							{#each slots as category (category)}
+								<div class={['cell', category]}>
+									{#if category === 'accessory'}
+										<AccessoryRow
+											pieces={piecesIn(selection, 'accessory')}
+											onadd={() => (picking = { category: 'accessory' })}
+											onedit={(piece) => (picking = { category: 'accessory', replacing: piece })}
+										/>
+									{:else}
+										<OutfitSlot
+											{category}
+											piece={firstIn(selection, category)}
+											tall={category === 'one_piece'}
+											onpick={() => (picking = { category })}
+											onclear={() => handleClear(category)}
+										/>
+									{/if}
+								</div>
+							{/each}
+							<!-- Dá altura à linha das pernas quando a peça única (vertical) ocupa o lugar dela -->
+							{#if selection.one_piece}<div class="cell spacer" aria-hidden="true"></div>{/if}
+						</div>
+						{#if !selection.one_piece}
+							<button
+								type="button"
+								class="button secondary one-piece"
+								onclick={() => (picking = { category: 'one_piece' })}
+							>
+								<Icon name="one_piece" />
+								Escolher peça única (vestido, macacão)
 							</button>
 						{/if}
-						<button type="button" disabled={saving} onclick={startOver}>Começar de novo</button>
 					</div>
-				</form>
-			</section>
+				</section>
 
-			<OutfitOutput {pieces} photoUid={photo?.uid} />
+				<aside class="export-panel" aria-label="Exportar o conjunto">
+					<OutfitOutput {pieces} photoUid={photo?.uid} />
+				</aside>
 
-			<SavedOutfits
-				{outfits}
-				{garments}
-				activeUid={active?.uid}
-				{deletingUid}
-				onuse={handleUse}
-				ondelete={handleDelete}
-			/>
+				<div class="save-area">
+					<FormAlert kind="success" message={notice} />
+
+					<section class="save" aria-labelledby="salvar-conjunto">
+						<h2 id="salvar-conjunto">
+							{active ? `Conjunto: ${active.name}` : 'Salvar este conjunto'}
+						</h2>
+						<form
+							novalidate
+							onsubmit={(event) => {
+								event.preventDefault();
+								save(active ? 'update' : 'create');
+							}}
+						>
+							<TextField
+								label="Nome do conjunto"
+								name="outfit-name"
+								maxlength={OUTFIT_NAME_MAX}
+								autocomplete="off"
+								hint="Por exemplo: “Look de sexta”."
+								error={nameError}
+								bind:value={outfitName}
+								bind:input={nameInput}
+								oninput={() => (nameError = '')}
+							/>
+							<FormAlert message={formError} />
+							<div class="button-group">
+								<button class="button" type="submit" disabled={saving} aria-busy={saving}>
+									{#if saving}Salvando…{:else if active}Atualizar conjunto{:else}Salvar conjunto{/if}
+								</button>
+								{#if active}
+									<button
+										type="button"
+										class="button secondary"
+										disabled={saving}
+										onclick={() => save('create')}
+									>
+										Salvar como novo
+									</button>
+								{/if}
+								<button type="button" class="button secondary" disabled={saving} onclick={startOver}
+									>Começar de novo</button
+								>
+							</div>
+						</form>
+					</section>
+				</div>
+
+				<div class="saved-area">
+					<SavedOutfits
+						{outfits}
+						{garments}
+						activeUid={active?.uid}
+						{deletingUid}
+						onuse={handleUse}
+						ondelete={handleDelete}
+					/>
+				</div>
+			</div>
 		{/if}
 	</div>
 
@@ -379,10 +402,40 @@
 		gap: var(--space-8);
 	}
 
+	/* Área de trabalho: a montagem, e o painel de exportação logo depois dela
+	   (no computador, ao lado e acompanhando a rolagem) */
+	.workspace {
+		display: grid;
+		gap: var(--space-8);
+		grid-template-areas: 'stage' 'export' 'save' 'saved';
+	}
+
 	.stage {
+		grid-area: stage;
 		display: grid;
 		gap: var(--space-6);
 		align-items: start;
+	}
+
+	.export-panel {
+		grid-area: export;
+		min-width: 0;
+		padding: var(--space-4);
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius-tag);
+	}
+
+	.save-area {
+		grid-area: save;
+		display: grid;
+		gap: var(--space-4);
+		align-content: start;
+		min-width: 0;
+	}
+
+	.saved-area {
+		grid-area: saved;
+		min-width: 0;
 	}
 
 	.photo {
@@ -398,6 +451,12 @@
 		border: 1px solid var(--color-border-subtle);
 		border-radius: var(--radius-field);
 		background: var(--color-surface);
+	}
+
+	.strip-hint {
+		margin: 0;
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
 	}
 
 	.strip {
@@ -499,20 +558,8 @@
 	}
 
 	.one-piece {
-		min-height: 2.75rem;
-		padding: var(--space-2) var(--space-4);
-		border: 1px dashed var(--color-border);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text-muted);
-		font: inherit;
+		width: 100%;
 		font-size: var(--text-sm);
-		cursor: pointer;
-	}
-
-	.one-piece:hover {
-		border-color: var(--color-primary);
-		color: var(--color-text);
 	}
 
 	.save {
@@ -530,42 +577,30 @@
 		gap: var(--space-4);
 	}
 
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
-
-	.actions button,
-	.retry {
-		min-height: 2.75rem;
-		padding: var(--space-2) var(--space-4);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	.actions .primary {
-		border-color: var(--color-primary);
-		background: var(--color-primary);
-		color: var(--color-on-primary);
-	}
-
-	.actions button:disabled {
-		cursor: progress;
-		opacity: 0.6;
-	}
-
 	.retry {
 		justify-self: start;
 	}
 
 	.go {
 		justify-self: start;
+	}
+
+	@media (min-width: 64rem) {
+		.workspace {
+			grid-template-columns: minmax(0, 1fr) 26rem;
+			grid-template-areas: 'stage export' 'save export' 'saved export';
+			column-gap: var(--space-12);
+			align-items: start;
+		}
+
+		/* O painel acompanha a rolagem: o texto e as cópias ficam sempre ao lado
+		   da montagem. Se for mais alto que a tela, rola por dentro. */
+		.export-panel {
+			position: sticky;
+			top: var(--space-4);
+			max-height: calc(100dvh - 2 * var(--space-4));
+			overflow-y: auto;
+		}
 	}
 
 	@media (min-width: 48rem) {

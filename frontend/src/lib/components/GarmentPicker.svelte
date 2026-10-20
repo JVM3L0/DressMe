@@ -89,10 +89,10 @@
 			</ul>
 		{/if}
 
-		<form method="dialog" class="footer">
+		<form method="dialog" class="button-group">
 			{#if onremove}
 				<button
-					class="close remove"
+					class="button danger"
 					type="submit"
 					onclick={() => {
 						onremove?.();
@@ -101,7 +101,7 @@
 					Tirar do conjunto
 				</button>
 			{/if}
-			<button class="close" type="submit">Cancelar</button>
+			<button class="button secondary" type="submit">Cancelar</button>
 		</form>
 	</div>
 </dialog>
@@ -190,28 +190,5 @@
 		white-space: nowrap;
 		font-size: var(--text-sm);
 		font-weight: 600;
-	}
-
-	.footer {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2);
-	}
-
-	.remove {
-		border-color: var(--color-danger);
-		color: var(--color-danger);
-	}
-
-	.close {
-		min-height: 2.75rem;
-		padding: var(--space-2) var(--space-6);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-field);
-		background: transparent;
-		color: var(--color-text);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
 	}
 </style>

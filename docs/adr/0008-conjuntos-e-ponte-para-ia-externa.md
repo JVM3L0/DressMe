@@ -27,7 +27,7 @@ O ADR-0001 previa que o usuário posicionasse as peças sobre a própria foto no
    - Como não há visão computacional, **o nome da peça é o que descreve a roupa para a IA**. O campo de nome continua opcional, e o formulário sugere incluir a cor e o tipo.
 5. **Levar para a IA:** copiar a foto, copiar a imagem das roupas, copiar o texto, baixar as imagens e, em aparelhos que sabem, compartilhar tudo pelo menu do sistema.
    - Imagens vão como PNG (o único formato aceito pela área de transferência em todos os navegadores, e as fotos são JPEG).
-   - A cópia de **imagem** só funciona em contexto seguro (HTTPS ou `localhost`). Fora dele, a tela oferece só o download e explica o motivo. O texto pode ser copiado sempre, com um método alternativo.
+   - A cópia de **imagem** por botão só funciona em contexto seguro (HTTPS ou `localhost`). Fora dele, a tela oferece o download e "Mostrar para copiar": a imagem inteira aparece na tela, e a pessoa a copia segurando o dedo sobre ela ("Copiar imagem" do próprio navegador, que não depende de HTTPS), com uma explicação do motivo. O texto pode ser copiado sempre, com um método alternativo.
    - A cópia começa dentro do clique, com a imagem entregue como promessa, o que o Safari exige.
 6. **O resultado da IA não volta para o VirtualFit.** O usuário usa a imagem gerada fora do sistema. Quando houver integração com uma IA, a mesma entrada (foto e conjunto) a alimenta.
 

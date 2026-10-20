@@ -38,6 +38,20 @@ describe('AccessoryRow', () => {
 		await expect.element(page.getByText('2 de 4')).toBeVisible();
 	});
 
+	it('o "+" tem ícone e rótulo, e a dica de tocar para trocar só aparece com acessórios', async () => {
+		await render(AccessoryRow, props([]));
+		await expect.element(page.getByText('Adicionar', { exact: true })).toBeVisible();
+		await expect
+			.element(page.getByText('Toque num acessório para trocar ou tirar.'))
+			.not.toBeInTheDocument();
+	});
+
+	it('com acessórios, explica que dá para tocar neles', async () => {
+		await render(AccessoryRow, props([hat(1)]));
+
+		await expect.element(page.getByText('Toque num acessório para trocar ou tirar.')).toBeVisible();
+	});
+
 	it('abre a escolha ao adicionar, e a troca ao tocar num acessório', async () => {
 		const onadd = vi.fn();
 		const onedit = vi.fn();
