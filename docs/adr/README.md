@@ -10,6 +10,7 @@ Cada arquivo registra uma decisão de arquitetura ou de escopo: o contexto, o qu
 | [0004](0004-frontend-estatico-com-api-em-api.md) | Frontend estático, com a API na mesma origem em `/api` | Aceito |
 | [0005](0005-versionamento-semantico-por-branch.md) | Versionamento semântico por branch | Aceito |
 | [0006](0006-sessao-em-cookie-e-protecao-de-contas.md) | Sessão em cookie, de uma semana, e proteção das contas | Aceito |
+| [0007](0007-categorias-de-pecas-e-entrega-das-imagens.md) | Categorias de peças e entrega das imagens | Aceito |
 
 ## Modelo
 

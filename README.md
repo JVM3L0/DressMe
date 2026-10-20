@@ -91,6 +91,9 @@ Na raiz ficam o `docker-compose.yml`, o `.env` (compartilhado pelo compose e pel
 | `RATE_LIMIT_ENABLED` | Não   | `true`        | Liga o limite de requisições                           |
 | `RATE_LIMIT_SIGNUP` | Não    | `5/minute`    | Limite de cadastros por IP                             |
 | `RATE_LIMIT_LOGIN` | Não     | `10/minute`   | Limite de tentativas de login por IP                   |
+| `RATE_LIMIT_UPLOAD` | Não    | `30/minute`   | Limite de envios de fotos e peças por IP               |
+| `MEDIA_ROOT`   | Não         | `media`       | Pasta das imagens enviadas (no compose, o volume `media` em `/media`) |
+| `MEDIA_ACCEL_REDIRECT` | Não | `false`       | `true` atrás do nginx: a API só autoriza e o nginx entrega o arquivo |
 | `RATE_LIMIT_STORAGE_URI` | Não | `memory://` | Armazenamento dos contadores (`redis://...` com várias instâncias) |
 | `FORWARDED_ALLOW_IPS` | Deploy | `127.0.0.1` | IPs de proxy confiáveis para o uvicorn (IP real do cliente) |
 | `TEST_REDIS_URL` | Não | — | Redis para o teste de rate limiting compartilhado (pulado sem ele) |
@@ -134,6 +137,7 @@ Abra <http://localhost:8080> (para mudar a porta, use `WEB_PORT`). A documentaç
 | `web` | `frontend/Dockerfile`: build do SvelteKit + `nginx:1.30-alpine` | Entrada única: serve o site estático em `/` e repassa `/api/*` para a API |
 | `app` | `backend/Dockerfile` | API FastAPI. Roda as migrações ao iniciar, e só é acessível pelo nginx |
 | `db` | `postgres:16-alpine` | Banco, publicado em `127.0.0.1:5432` para o desenvolvimento local |
+| volume `media` | — | Fotos e peças enviadas. A API grava, o nginx lê (somente leitura) e entrega depois que a API autoriza |
 
 A ordem de subida respeita os healthchecks: `db` → `app` → `web`. O nginx também define os cabeçalhos de segurança, o cache dos arquivos estáticos e o IP real do cliente para o rate limiting. A configuração fica em `frontend/nginx/`.
 
@@ -221,6 +225,12 @@ O hook do `pre-commit` executa o Ruff automaticamente em cada commit (`uv run pr
 | POST   | `/auth/login`   | Inicia a sessão com e-mail e senha (`200` com o cookie `virtualfit_session`; `401` se as credenciais estiverem erradas) |
 | POST   | `/auth/logout`  | Encerra a sessão neste navegador (`204`) |
 | GET    | `/users/me`     | Usuário da sessão atual (`401` sem sessão) |
+| GET, POST | `/photos/` | Lista as fotos do usuário (mais recentes primeiro) e envia uma nova (`multipart/form-data`, campo `file`; `201`, `413` acima de 10 MB, `415` se não for JPEG ou PNG) |
+| GET, DELETE | `/photos/{id}/image`, `/photos/{id}/thumbnail`, `/photos/{id}` | Imagem (até 2.048 px), miniatura (até 480 px) e exclusão (`404` se não existir ou for de outro usuário) |
+| GET, POST | `/garments/` | Lista as peças (`?category=` filtra) e adiciona uma (`file`, `category` e `name` opcional) |
+| GET, DELETE | `/garments/{id}/image`, `/garments/{id}/thumbnail`, `/garments/{id}` | Imagem, miniatura e exclusão |
+
+Categorias das peças: `top`, `outerwear`, `bottom`, `one_piece`, `footwear` e `accessory` ([ADR-0007](docs/adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)). Todas as rotas de fotos e peças exigem sessão.
 
 Regras do cadastro:
 

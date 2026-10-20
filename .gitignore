@@ -11,3 +11,6 @@ wheels/
 .env
 .ruff_cache/
 .pytest_cache/
+
+# Imagens enviadas em desenvolvimento local (ADR-0003)
+backend/media/

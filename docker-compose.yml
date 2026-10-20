@@ -32,6 +32,12 @@ services:
       FORWARDED_ALLOW_IPS: "*"
       # O nginx publica a API em /api: o /docs precisa saber o prefixo
       UVICORN_ROOT_PATH: /api
+      # Imagens (ADR-0003): a API grava no volume `media` e só autoriza a
+      # entrega; quem envia o arquivo é o nginx (X-Accel-Redirect)
+      MEDIA_ROOT: /media
+      MEDIA_ACCEL_REDIRECT: "true"
+    volumes:
+      - media:/media
     expose:
       - "8000"
     healthcheck:
@@ -51,6 +57,9 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    volumes:
+      # Só leitura: o nginx entrega os arquivos, quem grava é a API
+      - media:/media:ro
     ports:
       # Entrada única da aplicação: frontend em / e API em /api/. Só nesta
       # máquina por padrão; WEB_HOST=0.0.0.0 abre para a rede local (celular)
@@ -58,3 +67,4 @@ services:
 
 volumes:
   postgres_data:
+  media:

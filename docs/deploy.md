@@ -20,6 +20,8 @@ O nginx é a entrada pública, e a API não deve ser exposta diretamente. Atrás
 | `PORT` | Não | Porta exigida pela plataforma, se houver |
 | `RATE_LIMIT_STORAGE_URI` | Só com mais de uma instância | `redis://...` |
 | `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `RATE_LIMIT_SIGNUP`, `RATE_LIMIT_LOGIN` | Não | Padrões: `HS256`, `10080` (uma semana, [ADR-0006](adr/0006-sessao-em-cookie-e-protecao-de-contas.md)), `5/minute`, `10/minute` |
+| `MEDIA_ROOT`, `MEDIA_ACCEL_REDIRECT` | Sim, para as imagens | `/media` (o volume compartilhado com o nginx) e `true`. Com `false`, a própria API envia os arquivos, passando os bytes pelo Python |
+| `RATE_LIMIT_UPLOAD` | Não | Padrão: `30/minute` |
 | `AUTH_COOKIE_SECURE` | Não | Padrão `true`: o cookie da sessão só trafega por HTTPS. Só fica `false` em `development` e `testing` |
 
 A API valida a configuração ao iniciar e **não sobe** se faltar `DATABASE_URL` ou `SECRET_KEY`, ou se elas forem inválidas.
@@ -52,6 +54,19 @@ O limite de cadastros é **por IP do cliente**. Atrás de um proxy ou load balan
 
 Como validar depois do deploy: faça 6 cadastros seguidos de uma mesma máquina. O 6º deve receber `429`. Em seguida, um cadastro de outra rede (ex.: celular no 4G) deve ser aceito.
 
+## Imagens (volume `media`)
+
+As fotos e as peças ficam em arquivos no volume `media` ([ADR-0003](adr/0003-armazenamento-local-de-imagens-com-nginx.md) e [ADR-0007](adr/0007-categorias-de-pecas-e-entrega-das-imagens.md)). A API grava nele, e o nginx o monta em **somente leitura** em `/media`.
+
+- **Persistência:** use um volume que sobreviva a redeploys. Sem ele, os registros no banco apontam para arquivos que sumiram.
+- **Backup:** faça junto com o do banco. Os dois precisam ser do mesmo momento: o banco guarda só a chave (`photos/<uuid>.jpg`) de cada imagem, e a miniatura fica ao lado dela (`photos/<uuid>_thumb.jpg`).
+- **Espaço:** só cresce com o uso (cada envio ocupa de algumas centenas de KB a poucos MB: o original reduzido e a miniatura), e a exclusão de conta ainda não apaga os arquivos ([DT-11](debito-tecnico.md#dt-11-arquivos-órfãos-ao-apagar-contas)). Monitore o disco.
+- **Permissões:** a API grava os arquivos com modo `0644`, para o nginx (outro usuário) conseguir lê-los.
+- **Várias instâncias da API:** não funciona sem um disco compartilhado (limitação aceita da PoC).
+- **Limite de envio:** o nginx recusa corpos acima de 11 MB (`client_max_body_size` em `frontend/nginx/default.conf`). Se houver outro proxy na frente, ele precisa aceitar pelo menos isso.
+
+Como validar depois do deploy: envie uma foto, confira que ela aparece na tela, e que `GET /_media/photos/<arquivo>` (direto, sem a API) responde `404`.
+
 ## Rate limiting e instâncias
 
 Com **uma instância** e um processo do uvicorn (configuração atual do `backend/scripts/entrypoint.sh`), o contador em memória (`memory://`, padrão) é suficiente. Ele é zerado quando o container reinicia.
@@ -70,6 +85,7 @@ O suporte já está instalado (`limits[redis]`), e o teste `backend/tests/integr
 3. Verifique:
    - `GET /healthcheck/` responde `200`;
    - `POST /users/` cria um usuário (`201`);
+   - o envio de uma foto (`POST /photos/`) responde `201` e a imagem aparece em `GET /photos/{id}/image`;
    - `POST /auth/login` responde `200` com `Set-Cookie: virtualfit_session=...; HttpOnly; Secure; SameSite=Strict`, e `GET /users/me` responde `200` em seguida;
    - o teste de rate limit da seção [`FORWARDED_ALLOW_IPS`](#forwarded_allow_ips) passa.
 4. Nos logs, confirme que não aparecem valores de queries (`ECHO_SQL` desligado e parâmetros ocultos).
