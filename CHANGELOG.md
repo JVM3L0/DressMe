@@ -23,6 +23,10 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
 
 - Um registro de imagem sem o arquivo no disco (arquivo apagado, disco restaurado pela metade) passa a responder `404`, e não um erro `500`; o provador explica que a peça (ou foto) deve ser excluída e enviada de novo.
 
+### Corrigido
+
+- Gerenciador de senhas: o e-mail passa a ser o login que ele guarda e preenche (`autocomplete="username"` no cadastro e no login), e o nome de usuário vira só o apelido (`nickname`). Antes, ele poderia salvar o nome de usuário como login, e o preenchimento no login usaria um valor que não entra.
+
 ### Alterado
 
 - O item "prova virtual manual com arrastar, redimensionar e girar" do ADR-0001 foi substituído pelo ADR-0008.
