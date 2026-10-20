@@ -13,6 +13,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
+		"e2e": "node e2e/smoke.mjs",
 		"test": "npm run test:unit -- --run",
 		"api:types": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.ts",
 		"api:sync": "cd ../backend && uv run python -m scripts.export_openapi ../frontend/src/lib/api/openapi.json && cd ../frontend && npm run api:types"
