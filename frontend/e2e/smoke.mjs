@@ -251,6 +251,48 @@ try {
 		assert.equal(gone.status(), 404);
 	});
 
+	await step(
+		'no celular o menu é uma barra fixa embaixo, e no computador fica no cabeçalho',
+		async () => {
+			await page.goto(`${BASE_URL}/conta`);
+			await ready();
+			const bar = page.locator('.site-nav.bar');
+			await bar.waitFor();
+			const viewport = page.viewportSize();
+			const box = await bar.boundingBox();
+			assert.equal(
+				Math.round(box.y + box.height),
+				viewport.height,
+				'a barra fica colada embaixo da tela'
+			);
+			assert.equal(await bar.evaluate((el) => getComputedStyle(el).position), 'fixed');
+			const links = await bar.locator('a').evaluateAll((items) =>
+				items.map((item) => ({
+					...item.getBoundingClientRect().toJSON(),
+					name: item.textContent.trim()
+				}))
+			);
+			assert.deepEqual(
+				links.map((link) => link.name),
+				['Fotos', 'Guarda-roupa', 'Provador', 'Sua conta']
+			);
+			assert.ok(
+				links.every((link) => link.height >= 44 && link.width >= 44),
+				'alvos de toque de 44px'
+			);
+
+			// O rodapé fica acima da barra quando a página é rolada até o fim
+			await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+			const footer = await page.locator('.site-footer').boundingBox();
+			assert.ok(footer.y + footer.height <= box.y + 1, 'a barra não cobre o rodapé');
+
+			await page.setViewportSize({ width: 1280, height: 800 });
+			assert.equal(await bar.evaluate((el) => getComputedStyle(el).position), 'static');
+			assert.ok((await bar.boundingBox()).y < 100, 'no computador, o menu fica no cabeçalho');
+			await page.setViewportSize({ width: 390, height: 844 });
+		}
+	);
+
 	await step('o tema escuro vale após recarregar, e a sessão continua', async () => {
 		await page.getByRole('button', { name: 'Usar tema escuro' }).click();
 		await page.reload();

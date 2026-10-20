@@ -65,6 +65,9 @@
 	--page-gutter: clamp(1rem, 4vw, 2.5rem);
 
 	--duration-quick: 150ms;
+
+	/* Altura da barra de navegação fixa do celular (SiteNav) */
+	--tabbar-height: 3.5rem;
 }
 
 /*

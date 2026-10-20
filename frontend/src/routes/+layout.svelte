@@ -9,7 +9,7 @@
 	import ApiStatus from '#lib/components/ApiStatus.svelte';
 	import SiteNav from '#lib/components/SiteNav.svelte';
 	import ThemeToggle from '#lib/components/ThemeToggle.svelte';
-	import { loadSession } from '#lib/session.svelte.ts';
+	import { loadSession, session } from '#lib/session.svelte.ts';
 
 	import type { LayoutProps } from './$types';
 
@@ -33,7 +33,7 @@
 
 <header class="site-header">
 	<a class="wordmark" href={resolve('/')}>VirtualFit</a>
-	<div class="nav-slot"><SiteNav /></div>
+	<SiteNav />
 	<div class="toggle-slot"><ThemeToggle /></div>
 </header>
 
@@ -41,7 +41,7 @@
 	{@render children()}
 </main>
 
-<footer class="site-footer">
+<footer class="site-footer" class:tabbar-space={session.current.status !== 'anonymous'}>
 	<ApiStatus />
 	<a class="repository" href="https://github.com/JVM3L0/DressMe">
 		<!-- Marca do GitHub (Octicons, licença MIT) -->
@@ -66,9 +66,8 @@
 
 	.site-header {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
-		gap: 0 var(--space-4);
+		gap: var(--space-4);
 		padding-block: var(--space-2);
 	}
 
@@ -76,30 +75,8 @@
 		margin-right: auto;
 	}
 
-	/* No celular, os links descem para uma segunda linha, para caber todos */
 	.toggle-slot {
 		order: 2;
-	}
-
-	.nav-slot {
-		order: 3;
-		flex-basis: 100%;
-	}
-
-	/* Sem links (ainda sem resposta da API), a linha não ocupa espaço */
-	.nav-slot:empty {
-		display: none;
-	}
-
-	@media (min-width: 48rem) {
-		.nav-slot {
-			order: 1;
-			flex-basis: auto;
-		}
-
-		.toggle-slot {
-			order: 2;
-		}
 	}
 
 	.wordmark {
@@ -141,6 +118,17 @@
 		width: 1rem;
 		height: 1rem;
 		fill: currentColor;
+	}
+
+	/* A barra de navegação fixa do celular não pode cobrir o rodapé. O espaço é
+	   reservado até a sessão ser conhecida (sem salto para quem está logado) e
+	   some para quem não tem sessão, que não vê a barra. */
+	@media (max-width: 47.99rem) {
+		.site-footer.tabbar-space {
+			padding-bottom: calc(
+				var(--space-6) + var(--tabbar-height, 3.5rem) + env(safe-area-inset-bottom, 0px)
+			);
+		}
 	}
 
 	.skip-link {

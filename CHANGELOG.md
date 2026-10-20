@@ -16,8 +16,8 @@ As mudanças de cada versão do VirtualFit ficam registradas aqui. O formato seg
   - texto em inglês gerado por regras a partir das peças (categoria e nome), com a opção de manter o fundo e um pedido extra, para copiar e colar na IA;
   - "Compartilhar tudo" (foto, roupas e texto) em aparelhos que suportam.
 - Link "Provador" no cabeçalho.
+- Menu para celular (DT-14): quem está logado ganha uma barra de navegação fixa embaixo da tela, com ícone e rótulo para Fotos, Guarda-roupa, Provador e Sua conta, alvos de toque grandes, o destino atual marcado e respeito à área segura do aparelho. O cabeçalho fica só com o logo e o botão de tema. No computador, o menu continua no cabeçalho.
 - O teste de ponta a ponta cobre o provador, com a área de transferência de verdade.
-- Débito técnico DT-14 (menu ruim no celular).
 
 ### Corrigido
 
