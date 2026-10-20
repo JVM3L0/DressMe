@@ -156,7 +156,7 @@
 					name="name"
 					maxlength={GARMENT_NAME_MAX}
 					autocomplete="off"
-					hint="Para reconhecer a peça depois, como “Camisa de linho”."
+					hint="Inclua a cor e o tipo, como “Camisa de linho azul”. O nome também descreve a peça para a IA."
 					bind:value={name}
 				/>
 

@@ -162,6 +162,71 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "OutfitInput": {
+        "properties": {
+          "garment_ids": {
+            "description": "Peças do conjunto: no máximo uma por categoria, e uma peça única não combina com parte de cima ou de baixo.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Garment Ids",
+            "type": "array"
+          },
+          "name": {
+            "description": "Nome do conjunto.",
+            "examples": [
+              "Look de sexta"
+            ],
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "garment_ids"
+        ],
+        "title": "OutfitInput",
+        "type": "object"
+      },
+      "OutfitPublic": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "garment_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Garment Ids",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "uid": {
+            "format": "uuid",
+            "title": "Uid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uid",
+          "name",
+          "garment_ids",
+          "created_at"
+        ],
+        "title": "OutfitPublic",
+        "type": "object"
+      },
       "PhotoPublic": {
         "properties": {
           "created_at": {
@@ -311,7 +376,7 @@
   },
   "info": {
     "title": "VirtualFit API",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -665,6 +730,184 @@
         "summary": "Healthcheck",
         "tags": [
           "healthcheck"
+        ]
+      }
+    },
+    "/outfits/": {
+      "get": {
+        "operationId": "list_outfits_outfits__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OutfitPublic"
+                  },
+                  "title": "Response List Outfits Outfits  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "List Outfits",
+        "tags": [
+          "outfits"
+        ]
+      },
+      "post": {
+        "description": "Salva um conjunto com as peças do guarda-roupa. As peças são\nconferidas: precisam ser do usuário, uma por categoria.",
+        "operationId": "create_outfit_outfits__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutfitInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutfitPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "422": {
+            "description": "Dados inválidos, ou uma composição que não vale (peça que não é do usuário, categoria repetida, peça única com parte de cima ou de baixo). Neste caso, `detail` é um texto e `code` diz o motivo."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Create Outfit",
+        "tags": [
+          "outfits"
+        ]
+      }
+    },
+    "/outfits/{uid}": {
+      "delete": {
+        "description": "Exclui o conjunto, mas não as peças",
+        "operationId": "delete_outfit_outfits__uid__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Delete Outfit",
+        "tags": [
+          "outfits"
+        ]
+      },
+      "put": {
+        "description": "Troca o nome e as peças do conjunto",
+        "operationId": "update_outfit_outfits__uid__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Uid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutfitInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutfitPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem sessão ou com sessão expirada."
+          },
+          "404": {
+            "description": "Não existe, ou pertence a outro usuário."
+          },
+          "422": {
+            "description": "Dados inválidos, ou uma composição que não vale (peça que não é do usuário, categoria repetida, peça única com parte de cima ou de baixo). Neste caso, `detail` é um texto e `code` diz o motivo."
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Update Outfit",
+        "tags": [
+          "outfits"
         ]
       }
     },

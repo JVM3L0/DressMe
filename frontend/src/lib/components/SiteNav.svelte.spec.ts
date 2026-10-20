@@ -38,6 +38,9 @@ describe('SiteNav', () => {
 			.element(page.getByRole('link', { name: 'Guarda-roupa' }))
 			.toHaveAttribute('href', '/guarda-roupa');
 		await expect
+			.element(page.getByRole('link', { name: 'Provador' }))
+			.toHaveAttribute('href', '/provador');
+		await expect
 			.element(page.getByRole('link', { name: 'Sua conta' }))
 			.toHaveAttribute('href', '/conta');
 	});

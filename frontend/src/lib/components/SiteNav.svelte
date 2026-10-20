@@ -7,6 +7,7 @@
 	const LINKS = [
 		{ href: '/fotos', label: 'Fotos' },
 		{ href: '/guarda-roupa', label: 'Guarda-roupa' },
+		{ href: '/provador', label: 'Provador' },
 		{ href: '/conta', label: 'Sua conta' }
 	] as const;
 

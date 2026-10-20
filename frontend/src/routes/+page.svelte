@@ -12,8 +12,9 @@
 			description: 'Fotografe as peças que você já tem.'
 		},
 		{
-			title: 'Prove sem trocar de roupa',
-			description: 'Posicione as peças sobre a sua foto e salve o resultado.'
+			title: 'Monte o conjunto',
+			description:
+				'Escolha uma peça por categoria e leve o resultado para uma IA vestir a sua foto.'
 		}
 	];
 </script>
