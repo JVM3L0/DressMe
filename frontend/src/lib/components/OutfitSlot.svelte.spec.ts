@@ -49,14 +49,18 @@ describe('OutfitSlot', () => {
 		expect(document.querySelector('.cta')).toBeNull();
 	});
 
-	it('preenchido, mostra a miniatura, a categoria e o nome', async () => {
+	it('preenchido, mostra a miniatura e o nome numa linha só, sem repetir a categoria', async () => {
 		await render(OutfitSlot, props({ piece: PIECE }));
 
-		await expect.element(page.getByText('Parte de cima')).toBeVisible();
 		await expect.element(page.getByText('Camisa azul')).toBeVisible();
+		await expect.element(page.getByText('Parte de cima')).not.toBeInTheDocument();
 		const image = document.querySelector('img');
 		expect(image?.getAttribute('src')).toBe('/api/garments/abc/thumbnail');
 		expect(image?.getAttribute('alt')).toBe('');
+		// A categoria continua no nome do botão, para quem usa leitor de tela
+		await expect
+			.element(page.getByRole('button', { name: 'Trocar Parte de cima: Camisa azul' }))
+			.toBeVisible();
 	});
 
 	it('o botão de trocar diz a categoria e a peça atual', async () => {

@@ -504,11 +504,14 @@
 		color: var(--color-text-muted);
 	}
 
+	/* No celular, o mapa usa a largura da tela (quadradinhos de ~170px); ao lado da foto,
+	   no computador, uma coluna mais estreita (17rem) */
 	.body {
 		display: grid;
 		gap: var(--space-3);
 		justify-items: center;
-		width: min(100%, 15rem);
+		width: 100%;
+		max-width: 26rem;
 		justify-self: center;
 	}
 
@@ -604,8 +607,12 @@
 	}
 
 	@media (min-width: 48rem) {
+		.body {
+			width: min(100%, 17rem);
+		}
+
 		.stage {
-			grid-template-columns: minmax(0, 22rem) minmax(0, 15rem);
+			grid-template-columns: minmax(0, 20rem) minmax(0, 17rem);
 			justify-content: start;
 			gap: var(--space-8);
 			/* A foto tem a altura do mapa do corpo: cabeça, tronco, pernas e pés

@@ -29,11 +29,10 @@
 	>
 		{#if piece}
 			<img src={garmentThumbnailUrl(piece.uid)} alt="" loading="lazy" decoding="async" />
+			<!-- A categoria é dada pela posição no mapa (e pelo rótulo do botão): a legenda
+			     fica numa linha só, o nome, para a imagem ocupar o quadradinho -->
 			<span class="caption">
-				<span class="text">
-					<span class="category">{label}</span>
-					<span class="name">{title}</span>
-				</span>
+				<span class="name">{title}</span>
 				<!-- Dica de que o quadradinho é um botão: toque para trocar a peça -->
 				<span class="swap" aria-hidden="true"><Icon name="swap" size="sm" /></span>
 			</span>
@@ -155,7 +154,7 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
-		padding: var(--space-2) var(--space-2) 2.6rem;
+		padding: var(--space-2, 0.5rem) var(--space-2, 0.5rem) 2.25rem;
 	}
 
 	.caption {
@@ -170,11 +169,6 @@
 		text-align: left;
 	}
 
-	.text {
-		display: grid;
-		min-width: 0;
-	}
-
 	.swap {
 		display: grid;
 		place-items: center;
@@ -186,14 +180,12 @@
 		color: var(--color-on-primary);
 	}
 
-	.caption .category {
-		color: var(--color-text-muted);
-	}
-
 	.name {
+		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		font-size: var(--text-sm);
 		font-weight: 600;
 	}
 
